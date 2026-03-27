@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forever Together - Loyalty Platform 💍</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@300;400;500;600;700&family=Cookie&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --baby-pink: #FFB3D9;
+            --soft-pink: #FFD6E8;
+            --lavender: #E6D5F7;
+            --deep-rose: #FF69B4;
+            --purple-heart: #DA70D6;
+            --gold-accent: #FFD700;
+            --text-cute: #8B4789;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #FFE5F1 0%, #FFD6E8 15%, #E6D5F7 30%, #D5E8F7 45%, #D5F7E8 60%, #FFE5F1 100%);
+            background-size: 400% 400%;
+            animation: cloudDrift 25s ease infinite;
+            min-height: 100vh;
+            color: var(--text-cute);
+            overflow-x: hidden;
+        }
+
+        @keyframes cloudDrift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .floating-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 24px;
+            opacity: 0;
+            animation: floatHeart 20s infinite;
+        }
+
+        @keyframes floatHeart {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10%, 90% { opacity: 0.8; }
+            100% { transform: translateY(-100px) rotate(360deg); }
+        }
+
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 240, 250, 0.9));
+            backdrop-filter: blur(25px);
+            border-radius: 40px;
+            padding: 50px 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 30px 80px rgba(255, 105, 180, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.7);
+            text-align: center;
+        }
+
+        .auth-title {
+            font-family: 'Cookie', cursive;
+            font-size: 4rem;
+            background: linear-gradient(135deg, #FF69B4, #DA70D6, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .auth-subtitle {
+            font-family: 'Pacifico', cursive;
+            font-size: 1.2rem;
+            color: var(--purple-heart);
+            margin-bottom: 40px;
+        }
+
+        .loyalty-badge {
+            background: linear-gradient(135deg, var(--gold-accent), #FFA500);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 30px;
+            display: inline-block;
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--deep-rose);
+            font-size: 0.95rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 20px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: var(--text-cute);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--deep-rose);
+            box-shadow: 0 0 0 4px rgba(255, 105, 180, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--deep-rose), var(--purple-heart));
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 0 8px 25px rgba(255, 105, 180, 0.3);
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255, 105, 180, 0.5);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #FF6B6B, #C44569);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #51CF66, #37B24D);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(255, 214, 232, 0.5), rgba(230, 213, 247, 0.5));
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .info-title {
+            font-weight: 700;
+            color: var(--deep-rose);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .info-text {
+            color: var(--text-cute);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .phone-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .country-code {
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .otp-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .otp-input {
+            width: 50px;
+            height: 60px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #recaptcha-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .cheater-warning {
+            background: linear-gradient(135deg, #FF0000, #8B0000);
+            color: white;
+            padding: 30px;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-align: center;
+            animation: pulse 1s infinite;
+            border: 3px solid #FFD700;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 40px 25px;
+            }
+            .auth-title {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-hearts" id="hearts"></div>
+
+    <div id="auth" class="auth-container">
+        <div class="auth-card">
+            <h1 class="auth-title">Forever Together</h1>
+            <p class="auth-subtitle">One Love, One Life, One Account 💍</p>
+            <div class="loyalty-badge">🔒 Loyalty-First Platform 🔒</div>
+
+            <div id="message-container"></div>
+
+            <!-- Step 1: Phone Number Entry -->
+            <div id="phone-step">
+                <div class="info-box">
+                    <div class="info-title">🛡️ Strict Loyalty Rules</div>
+                    <div class="info-text">
+                        ✅ One phone number = One partner only<br>
+                        ✅ No cheating allowed<br>
+                        ✅ Delete current relationship before starting new one<br>
+                        ✅ Your data is sacred & private
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Your Phone Number</label>
+                    <div class="phone-input">
+                        <input type="text" id="country-code" class="country-code" value="+91" readonly>
+                        <input type="tel" id="phone-number" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}">
+                    </div>
+                </div>
+
+                <div id="recaptcha-container"></div>
+
+                <button onclick="sendOTP()" id="send-otp-btn">
+                    <span id="phone-btn-text">Send Verification Code 📱</span>
+                </button>
+
+                <div style="margin-top: 20px; font-size: 0.85rem; color: var(--text-cute); text-align: center;">
+                    By continuing, you agree to our loyalty-first policy
+                </div>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="otp-step" class="hidden">
+                <div class="info-box">
+                    <div class="info-title">📱 Verify Your Number</div>
+                    <div class="info-text">
+                        Enter the 6-digit code sent to:<br>
+                        <strong id="phone-display"></strong>
+                    </div>
+                </div>
+
+                <div class="otp-inputs">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-1" oninput="moveToNext(this, 'otp-2')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-2" oninput="moveToNext(this, 'otp-3')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-3" oninput="moveToNext(this, 'otp-4')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-4" oninput="moveToNext(this, 'otp-5')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-5" oninput="moveToNext(this, 'otp-6')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-6" oninput="verifyOTP()">
+                </div>
+
+                <button onclick="verifyOTP()">
+                    <span id="otp-btn-text">Verify Code ✅</span>
+                </button>
+
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="#" onclick="backToPhone(); return false;" style="color: var(--purple-heart); font-size: 0.9rem;">← Change Number</a>
+                </div>
+            </div>
+
+            <!-- Step 3: Setup -->
+            <div id="setup-step" class="hidden">
+                <div class="info-box">
+                    <div class="info-title">💕 Create Your Love Journey</div>
+                    <div class="info-text">
+                        Set up your relationship profile
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Your Name</label>
+                    <input type="text" id="user-name" placeholder="Your name">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Partner's Phone Number</label>
+                    <div class="phone-input">
+                        <input type="text" class="country-code" value="+91" readonly>
+                        <input type="tel" id="partner-phone" placeholder="9876543210" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">When did you start dating?</label>
+                    <input type="date" id="relationship-start">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Your Special Future Date</label>
+                    <input type="date" id="target-date">
+                </div>
+
+                <button onclick="createRelationship()">
+                    <span id="setup-btn-text">Start Our Forever Journey 🚀</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="hidden">
+        <div style="text-align: center; padding: 100px 20px;">
+            <h1 style="font-family: 'Cookie', cursive; font-size: 4rem; color: var(--deep-rose);">
+                Welcome! 💕
+            </h1>
+            <p style="font-size: 1.2rem; color: var(--text-cute); margin-top: 20px;" id="welcome-message">
+                Loading your love journey...
+            </p>
+            <button onclick="logout()" style="max-width: 300px; margin: 40px auto;">
+                Logout 👋
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // FIREBASE CONFIGURATION
+        // ============================================
+        
+        // TODO: Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ============================================
+        // STATE
+        // ============================================
+        
+        let currentPhone = null;
+        let confirmationResult = null;
+        let recaptchaVerifier = null;
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        function init() {
+            // Create floating hearts
+            for (let i = 0; i < 25; i++) createHeart();
+            
+            // Setup reCAPTCHA
+            setupRecaptcha();
+            
+            // Check if user is already logged in
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log('User logged in:', user.phoneNumber);
+                    // TODO: Check Supabase for user data
+                    showApp(user);
+                }
+            });
+        }
+
+        function createHeart() {
+            const hearts = ['💕', '💖', '💗', '💝', '💞', '💓', '❤️', '🩷', '💘', '💌', '💍'];
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.innerHTML = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.animationDuration = (Math.random() * 10 + 15) + 's';
+            heart.style.animationDelay = Math.random() * 5 + 's';
+            document.getElementById('hearts').appendChild(heart);
+        }
+
+        function setupRecaptcha() {
+            if (!recaptchaVerifier) {
+                recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                    'size': 'normal',
+                    'callback': (response) => {
+                        console.log('reCAPTCHA solved');
+                    },
+                    'expired-callback': () => {
+                        showError('reCAPTCHA expired. Please try again.');
+                        recaptchaVerifier.render().then(function(widgetId) {
+                            grecaptcha.reset(widgetId);
+                        });
+                    }
+                });
+                
+                recaptchaVerifier.render().catch(error => {
+                    console.error('Error rendering reCAPTCHA:', error);
+                });
+            }
+        }
+
+        // ============================================
+        // OTP FUNCTIONS
+        // ============================================
+
+        async function sendOTP() {
+            const phone = document.getElementById('phone-number').value.trim();
+            const countryCode = document.getElementById('country-code').value;
+
+            if (!phone || phone.length !== 10) {
+                showError('Please enter a valid 10-digit phone number');
+                return;
+            }
+
+            const fullPhone = countryCode + phone;
+            currentPhone = fullPhone;
+
+            const btn = document.getElementById('send-otp-btn');
+            btn.disabled = true;
+            document.getElementById('phone-btn-text').innerHTML = '<span class="loading"></span>';
+
+            try {
+                // Send OTP using Firebase
+                confirmationResult = await auth.signInWithPhoneNumber(fullPhone, recaptchaVerifier);
+                
+                // Show OTP step
+                document.getElementById('phone-step').classList.add('hidden');
+                document.getElementById('otp-step').classList.remove('hidden');
+                document.getElementById('phone-display').textContent = fullPhone;
+                
+                showSuccess('Verification code sent! ✨');
+                
+                // Focus first OTP input
+                document.getElementById('otp-1').focus();
+
+            } catch (error) {
+                console.error('Send OTP error:', error);
+                let errorMessage = 'Error sending verification code. ';
+                
+                if (error.code === 'auth/invalid-phone-number') {
+                    errorMessage = 'Invalid phone number format.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many requests. Please try again later.';
+                } else if (error.code === 'auth/quota-exceeded') {
+                    errorMessage = 'SMS quota exceeded. Please try again tomorrow.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                showError(errorMessage);
+                btn.disabled = false;
+                document.getElementById('phone-btn-text').textContent = 'Send Verification Code 📱';
+                
+                // Reset reCAPTCHA
+                if (recaptchaVerifier) {
+                    recaptchaVerifier.render().then(function(widgetId) {
+                        grecaptcha.reset(widgetId);
+                    });
+                }
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = Array.from({length: 6}, (_, i) => 
+                document.getElementById(`otp-${i+1}`).value
+            ).join('');
+
+            if (otp.length !== 6) {
+                showError('Please enter the complete 6-digit code');
+                return;
+            }
+
+            const btn = document.getElementById('otp-btn-text');
+            btn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                // Verify OTP
+                const result = await confirmationResult.confirm(otp);
+                const user = result.user;
+                
+                console.log('User verified:', user.phoneNumber);
+                
+                // TODO: Check Supabase for existing user/relationship
+                // For now, show setup
+                showSetup();
+
+            } catch (error) {
+                console.error('Verify OTP error:', error);
+                let errorMessage = 'Invalid verification code. Please try again.';
+                
+                if (error.code === 'auth/invalid-verification-code') {
+                    errorMessage = 'Invalid code. Please check and try again.';
+                } else if (error.code === 'auth/code-expired') {
+                    errorMessage = 'Code expired. Please request a new one.';
+                }
+                
+                showError(errorMessage);
+                btn.textContent = 'Verify Code ✅';
+                
+                // Clear OTP inputs
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById(`otp-${i}`).value = '';
+                }
+                document.getElementById('otp-1').focus();
+            }
+        }
+
+        function moveToNext(current, nextId) {
+            if (current.value.length === 1) {
+                const next = document.getElementById(nextId);
+                if (next) next.focus();
+            }
+        }
+
+        function backToPhone() {
+            document.getElementById('otp-step').classList.add('hidden');
+            document.getElementById('phone-step').classList.remove('hidden');
+            
+            // Clear OTP inputs
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`otp-${i}`).value = '';
+            }
+            
+            // Reset reCAPTCHA
+            if (recaptchaVerifier) {
+                recaptchaVerifier.render().then(function(widgetId) {
+                    grecaptcha.reset(widgetId);
+                });
+            }
+        }
+
+        // ============================================
+        // SETUP & APP
+        // ============================================
+
+        function showSetup() {
+            document.getElementById('otp-step').classList.add('hidden');
+            document.getElementById('setup-step').classList.remove('hidden');
+            
+            // Set default target date (17 months + 3 days from today)
+            const targetDate = new Date();
+            targetDate.setMonth(targetDate.getMonth() + 17);
+            targetDate.setDate(targetDate.getDate() + 3);
+            document.getElementById('target-date').value = targetDate.toISOString().split('T')[0];
+        }
+
+        async function createRelationship() {
+            const userName = document.getElementById('user-name').value.trim();
+            const partnerPhone = '+91' + document.getElementById('partner-phone').value.trim();
+            const relationshipStart = document.getElementById('relationship-start').value;
+            const targetDate = document.getElementById('target-date').value;
+
+            if (!userName || !partnerPhone || !relationshipStart || !targetDate) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            if (partnerPhone === currentPhone) {
+                showError('You cannot add yourself as a partner!');
+                return;
+            }
+
+            const btn = document.getElementById('setup-btn-text');
+            btn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                // TODO: Save to Supabase
+                console.log('Creating relationship:', {
+                    userName,
+                    partnerPhone,
+                    relationshipStart,
+                    targetDate
+                });
+
+                showSuccess('Relationship created! ✨');
+                
+                setTimeout(() => {
+                    showApp({
+                        displayName: userName,
+                        phoneNumber: currentPhone
+                    });
+                }, 2000);
+
+            } catch (error) {
+                console.error('Create relationship error:', error);
+                showError('Error creating relationship. Please try again.');
+                btn.textContent = 'Start Our Forever Journey 🚀';
+            }
+        }
+
+        function showApp(user) {
+            document.getElementById('auth').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            
+            document.getElementById('welcome-message').textContent = 
+                `Welcome ${user.displayName || 'back'}! Your love journey awaits. 💕`;
+        }
+
+        async function logout() {
+            try {
+                await auth.signOut();
+                location.reload();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        function showCheaterWarning() {
+            const warning = `
+                <div class="cheater-warning">
+                    🚨 STOP! YOU'RE TRYING TO CHEAT! 🚨<br><br>
+                    You already have a relationship on this platform.<br><br>
+                    Delete your current relationship first if you've moved on.<br><br>
+                    We believe in ONE LOVE, ONE PARTNER. 💍
+                </div>
+            `;
+            document.getElementById('message-container').innerHTML = warning;
+        }
+
+        // ============================================
+        // MESSAGES
+        // ============================================
+
+        function showError(message) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="success-message">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
