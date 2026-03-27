@@ -6,9 +6,8 @@
     <title>Forever Together - Loyalty Platform 💍</title>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@300;400;500;600;700&family=Cookie&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     
     <style>
         * {
@@ -265,12 +264,6 @@
             to { transform: rotate(360deg); }
         }
 
-        #recaptcha-container {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
         .cheater-warning {
             background: linear-gradient(135deg, #FF0000, #8B0000);
             color: white;
@@ -287,6 +280,20 @@
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
+        }
+
+        /* Cooldown timer styling */
+        .cooldown-timer {
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--purple-heart);
+            font-weight: 600;
+        }
+
+        .cooldown-timer span {
+            color: var(--deep-rose);
+            font-weight: 700;
         }
 
         @media (max-width: 768px) {
@@ -330,7 +337,7 @@
                     </div>
                 </div>
 
-                <div id="recaptcha-container"></div>
+                <!-- No reCAPTCHA needed with Supabase! -->
 
                 <button onclick="sendOTP()" id="send-otp-btn">
                     <span id="phone-btn-text">Send Verification Code 📱</span>
@@ -352,20 +359,25 @@
                 </div>
 
                 <div class="otp-inputs">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-1" oninput="moveToNext(this, 'otp-2')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-2" oninput="moveToNext(this, 'otp-3')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-3" oninput="moveToNext(this, 'otp-4')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-4" oninput="moveToNext(this, 'otp-5')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-5" oninput="moveToNext(this, 'otp-6')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-6" oninput="verifyOTP()">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-1" oninput="moveToNext(this, 'otp-2')" onkeydown="handleOtpKeydown(event, null)">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-2" oninput="moveToNext(this, 'otp-3')" onkeydown="handleOtpKeydown(event, 'otp-1')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-3" oninput="moveToNext(this, 'otp-4')" onkeydown="handleOtpKeydown(event, 'otp-2')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-4" oninput="moveToNext(this, 'otp-5')" onkeydown="handleOtpKeydown(event, 'otp-3')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-5" oninput="moveToNext(this, 'otp-6')" onkeydown="handleOtpKeydown(event, 'otp-4')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-6" oninput="autoVerify()" onkeydown="handleOtpKeydown(event, 'otp-5')">
                 </div>
 
-                <button onclick="verifyOTP()">
+                <button onclick="verifyOTP()" id="verify-otp-btn">
                     <span id="otp-btn-text">Verify Code ✅</span>
                 </button>
 
                 <div style="margin-top: 15px; text-align: center;">
                     <a href="#" onclick="backToPhone(); return false;" style="color: var(--purple-heart); font-size: 0.9rem;">← Change Number</a>
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
+                    <a href="#" id="resend-link" onclick="resendOTP(); return false;" style="color: var(--purple-heart); font-size: 0.9rem;">Resend Code</a>
+                </div>
+                <div id="cooldown-display" class="cooldown-timer hidden">
+                    Resend available in <span id="cooldown-seconds">60</span>s
                 </div>
             </div>
 
@@ -424,30 +436,23 @@
 
     <script>
         // ============================================
-        // FIREBASE CONFIGURATION
+        // SUPABASE CONFIGURATION
         // ============================================
         
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBhgBIfyMXQTB_LV9ZOTN9I1nxLUapvd_E",
-            authDomain: "loyalty-platform-90444.firebaseapp.com",
-            projectId: "loyalty-platform-90444",
-            storageBucket: "loyalty-platform-90444.firebasestorage.app",
-            messagingSenderId: "350595060753",
-            appId: "1:350595060753:web:5a378f15a0a4d505608db0"
-        };
+        // ⚠️  REPLACE THESE with your actual Supabase project values
+        //     Found in: Supabase Dashboard → Settings → API
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ============================================
         // STATE
         // ============================================
         
         let currentPhone = null;
-        let confirmationResult = null;
-        let recaptchaVerifier = null;
+        let cooldownInterval = null;
 
         // ============================================
         // INITIALIZATION
@@ -457,17 +462,31 @@
             // Create floating hearts
             for (let i = 0; i < 25; i++) createHeart();
             
-            // Setup reCAPTCHA
-            setupRecaptcha();
-            
             // Check if user is already logged in
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    console.log('User logged in:', user.phoneNumber);
-                    // TODO: Check Supabase for user data
-                    showApp(user);
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_IN' && session?.user) {
+                    console.log('User logged in:', session.user.phone);
+                    // TODO: Check Supabase DB for existing user/relationship data
+                    showApp({
+                        displayName: session.user.user_metadata?.name || null,
+                        phoneNumber: session.user.phone
+                    });
                 }
             });
+
+            // Also check current session on load
+            checkExistingSession();
+        }
+
+        async function checkExistingSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                console.log('Existing session found:', session.user.phone);
+                showApp({
+                    displayName: session.user.user_metadata?.name || null,
+                    phoneNumber: session.user.phone
+                });
+            }
         }
 
         function createHeart() {
@@ -481,29 +500,8 @@
             document.getElementById('hearts').appendChild(heart);
         }
 
-        function setupRecaptcha() {
-            if (!recaptchaVerifier) {
-                recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                    'size': 'normal',
-                    'callback': (response) => {
-                        console.log('reCAPTCHA solved');
-                    },
-                    'expired-callback': () => {
-                        showError('reCAPTCHA expired. Please try again.');
-                        recaptchaVerifier.render().then(function(widgetId) {
-                            grecaptcha.reset(widgetId);
-                        });
-                    }
-                });
-                
-                recaptchaVerifier.render().catch(error => {
-                    console.error('Error rendering reCAPTCHA:', error);
-                });
-            }
-        }
-
         // ============================================
-        // OTP FUNCTIONS
+        // OTP FUNCTIONS (Supabase + Twilio)
         // ============================================
 
         async function sendOTP() {
@@ -523,9 +521,13 @@
             document.getElementById('phone-btn-text').innerHTML = '<span class="loading"></span>';
 
             try {
-                // Send OTP using Firebase
-                confirmationResult = await auth.signInWithPhoneNumber(fullPhone, recaptchaVerifier);
-                
+                // Send OTP via Supabase (which uses Twilio under the hood)
+                const { data, error } = await supabase.auth.signInWithOtp({
+                    phone: fullPhone,
+                });
+
+                if (error) throw error;
+
                 // Show OTP step
                 document.getElementById('phone-step').classList.add('hidden');
                 document.getElementById('otp-step').classList.remove('hidden');
@@ -536,30 +538,24 @@
                 // Focus first OTP input
                 document.getElementById('otp-1').focus();
 
+                // Start cooldown timer (Supabase enforces 60s between OTPs)
+                startCooldown(60);
+
             } catch (error) {
                 console.error('Send OTP error:', error);
                 let errorMessage = 'Error sending verification code. ';
                 
-                if (error.code === 'auth/invalid-phone-number') {
-                    errorMessage = 'Invalid phone number format.';
-                } else if (error.code === 'auth/too-many-requests') {
-                    errorMessage = 'Too many requests. Please try again later.';
-                } else if (error.code === 'auth/quota-exceeded') {
-                    errorMessage = 'SMS quota exceeded. Please try again tomorrow.';
+                if (error.message?.includes('rate limit') || error.message?.includes('60 seconds')) {
+                    errorMessage = 'Please wait 60 seconds before requesting another code.';
+                } else if (error.message?.includes('invalid') || error.message?.includes('phone')) {
+                    errorMessage = 'Invalid phone number format. Please check and try again.';
                 } else {
-                    errorMessage += error.message;
+                    errorMessage += error.message || 'Please try again.';
                 }
                 
                 showError(errorMessage);
                 btn.disabled = false;
                 document.getElementById('phone-btn-text').textContent = 'Send Verification Code 📱';
-                
-                // Reset reCAPTCHA
-                if (recaptchaVerifier) {
-                    recaptchaVerifier.render().then(function(widgetId) {
-                        grecaptcha.reset(widgetId);
-                    });
-                }
             }
         }
 
@@ -575,15 +571,22 @@
 
             const btn = document.getElementById('otp-btn-text');
             btn.innerHTML = '<span class="loading"></span>';
+            document.getElementById('verify-otp-btn').disabled = true;
 
             try {
-                // Verify OTP
-                const result = await confirmationResult.confirm(otp);
-                const user = result.user;
+                // Verify OTP with Supabase
+                const { data, error } = await supabase.auth.verifyOtp({
+                    phone: currentPhone,
+                    token: otp,
+                    type: 'sms',
+                });
+
+                if (error) throw error;
+
+                console.log('User verified:', data.user.phone);
                 
-                console.log('User verified:', user.phoneNumber);
-                
-                // TODO: Check Supabase for existing user/relationship
+                // Check if user has existing relationship data in Supabase
+                // TODO: Query your relationships table here
                 // For now, show setup
                 showSetup();
 
@@ -591,22 +594,48 @@
                 console.error('Verify OTP error:', error);
                 let errorMessage = 'Invalid verification code. Please try again.';
                 
-                if (error.code === 'auth/invalid-verification-code') {
-                    errorMessage = 'Invalid code. Please check and try again.';
-                } else if (error.code === 'auth/code-expired') {
+                if (error.message?.includes('expired') || error.message?.includes('Token has expired')) {
                     errorMessage = 'Code expired. Please request a new one.';
+                } else if (error.message?.includes('invalid') || error.message?.includes('Invalid')) {
+                    errorMessage = 'Invalid code. Please check and try again.';
                 }
                 
                 showError(errorMessage);
                 btn.textContent = 'Verify Code ✅';
+                document.getElementById('verify-otp-btn').disabled = false;
                 
                 // Clear OTP inputs
-                for (let i = 1; i <= 6; i++) {
-                    document.getElementById(`otp-${i}`).value = '';
-                }
-                document.getElementById('otp-1').focus();
+                clearOtpInputs();
             }
         }
+
+        async function resendOTP() {
+            if (cooldownInterval) return; // Still on cooldown
+
+            try {
+                const { data, error } = await supabase.auth.signInWithOtp({
+                    phone: currentPhone,
+                });
+
+                if (error) throw error;
+
+                showSuccess('New code sent! ✨');
+                startCooldown(60);
+                clearOtpInputs();
+
+            } catch (error) {
+                console.error('Resend OTP error:', error);
+                if (error.message?.includes('60 seconds') || error.message?.includes('rate limit')) {
+                    showError('Please wait before requesting a new code.');
+                } else {
+                    showError('Error resending code: ' + (error.message || 'Please try again.'));
+                }
+            }
+        }
+
+        // ============================================
+        // OTP INPUT HELPERS
+        // ============================================
 
         function moveToNext(current, nextId) {
             if (current.value.length === 1) {
@@ -615,20 +644,73 @@
             }
         }
 
+        function handleOtpKeydown(event, prevId) {
+            if (event.key === 'Backspace' && event.target.value === '' && prevId) {
+                const prev = document.getElementById(prevId);
+                if (prev) {
+                    prev.value = '';
+                    prev.focus();
+                }
+            }
+        }
+
+        function autoVerify() {
+            const otp = Array.from({length: 6}, (_, i) => 
+                document.getElementById(`otp-${i+1}`).value
+            ).join('');
+            if (otp.length === 6) {
+                verifyOTP();
+            }
+        }
+
+        function clearOtpInputs() {
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`otp-${i}`).value = '';
+            }
+            document.getElementById('otp-1').focus();
+        }
+
+        function startCooldown(seconds) {
+            const resendLink = document.getElementById('resend-link');
+            const cooldownDisplay = document.getElementById('cooldown-display');
+            const cooldownSeconds = document.getElementById('cooldown-seconds');
+            
+            resendLink.style.pointerEvents = 'none';
+            resendLink.style.opacity = '0.4';
+            cooldownDisplay.classList.remove('hidden');
+            
+            let remaining = seconds;
+            cooldownSeconds.textContent = remaining;
+            
+            cooldownInterval = setInterval(() => {
+                remaining--;
+                cooldownSeconds.textContent = remaining;
+                
+                if (remaining <= 0) {
+                    clearInterval(cooldownInterval);
+                    cooldownInterval = null;
+                    resendLink.style.pointerEvents = 'auto';
+                    resendLink.style.opacity = '1';
+                    cooldownDisplay.classList.add('hidden');
+                }
+            }, 1000);
+        }
+
         function backToPhone() {
             document.getElementById('otp-step').classList.add('hidden');
             document.getElementById('phone-step').classList.remove('hidden');
             
             // Clear OTP inputs
-            for (let i = 1; i <= 6; i++) {
-                document.getElementById(`otp-${i}`).value = '';
-            }
+            clearOtpInputs();
             
-            // Reset reCAPTCHA
-            if (recaptchaVerifier) {
-                recaptchaVerifier.render().then(function(widgetId) {
-                    grecaptcha.reset(widgetId);
-                });
+            // Reset send button
+            document.getElementById('send-otp-btn').disabled = false;
+            document.getElementById('phone-btn-text').textContent = 'Send Verification Code 📱';
+            
+            // Clear cooldown
+            if (cooldownInterval) {
+                clearInterval(cooldownInterval);
+                cooldownInterval = null;
             }
         }
 
@@ -667,7 +749,27 @@
             btn.innerHTML = '<span class="loading"></span>';
 
             try {
-                // TODO: Save to Supabase
+                // Update user metadata with their name
+                const { error: updateError } = await supabase.auth.updateUser({
+                    data: { name: userName }
+                });
+
+                if (updateError) {
+                    console.warn('Could not update user metadata:', updateError);
+                }
+
+                // TODO: Save relationship to your Supabase DB table
+                // Example:
+                // const { data, error } = await supabase
+                //     .from('relationships')
+                //     .insert({
+                //         user_phone: currentPhone,
+                //         user_name: userName,
+                //         partner_phone: partnerPhone,
+                //         relationship_start: relationshipStart,
+                //         target_date: targetDate,
+                //     });
+
                 console.log('Creating relationship:', {
                     userName,
                     partnerPhone,
@@ -701,7 +803,7 @@
 
         async function logout() {
             try {
-                await auth.signOut();
+                await supabase.auth.signOut();
                 location.reload();
             } catch (error) {
                 console.error('Logout error:', error);
