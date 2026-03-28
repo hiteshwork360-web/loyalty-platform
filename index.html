@@ -6,8 +6,10 @@
     <title>Forever Together - Loyalty Platform 💍</title>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@300;400;500;600;700&family=Cookie&display=swap" rel="stylesheet">
     
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Firebase SDK (Modular - Compat version for simplicity in vanilla JS) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     
     <style>
         * {
@@ -296,6 +298,11 @@
             font-weight: 700;
         }
 
+        /* reCAPTCHA container - invisible but required by Firebase */
+        #recaptcha-container {
+            /* Firebase invisible reCAPTCHA renders here */
+        }
+
         @media (max-width: 768px) {
             .auth-card {
                 padding: 40px 25px;
@@ -308,6 +315,9 @@
 </head>
 <body>
     <div class="floating-hearts" id="hearts"></div>
+
+    <!-- Invisible reCAPTCHA container (required by Firebase Phone Auth) -->
+    <div id="recaptcha-container"></div>
 
     <div id="auth" class="auth-container">
         <div class="auth-card">
@@ -336,8 +346,6 @@
                         <input type="tel" id="phone-number" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}">
                     </div>
                 </div>
-
-                <!-- No reCAPTCHA needed with Supabase! -->
 
                 <button onclick="sendOTP()" id="send-otp-btn">
                     <span id="phone-btn-text">Send Verification Code 📱</span>
@@ -436,16 +444,25 @@
 
     <script>
         // ============================================
-        // SUPABASE CONFIGURATION
+        // FIREBASE CONFIGURATION
         // ============================================
         
-        // ⚠️  REPLACE THESE with your actual Supabase project values
-        //     Found in: Supabase Dashboard → Settings → API
-        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        // ⚠️  REPLACE THESE with your actual Firebase project values
+        //     Found in: Firebase Console → Project Settings → General → Your apps → Web app
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-        // Initialize Supabase client
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // ============================================
         // STATE
@@ -453,6 +470,8 @@
         
         let currentPhone = null;
         let cooldownInterval = null;
+        let confirmationResult = null;  // Firebase stores the OTP verification handle here
+        let recaptchaVerifier = null;
 
         // ============================================
         // INITIALIZATION
@@ -461,30 +480,78 @@
         function init() {
             // Create floating hearts
             for (let i = 0; i < 25; i++) createHeart();
+
+            // Setup invisible reCAPTCHA (required by Firebase Phone Auth)
+            setupRecaptcha();
             
-            // Check if user is already logged in
-            supabase.auth.onAuthStateChange(async (event, session) => {
-                if (event === 'SIGNED_IN' && session?.user) {
-                    console.log('User logged in:', session.user.phone);
-                    // TODO: Check Supabase DB for existing user/relationship data
-                    showApp({
-                        displayName: session.user.user_metadata?.name || null,
-                        phoneNumber: session.user.phone
-                    });
+            // Listen for auth state changes
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log('User logged in:', user.phoneNumber);
+                    // Check Firestore for existing relationship data
+                    await handleAuthenticatedUser(user);
+                }
+            });
+        }
+
+        function setupRecaptcha() {
+            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response) => {
+                    // reCAPTCHA solved — will proceed with sendOTP
+                    console.log('reCAPTCHA verified');
+                },
+                'expired-callback': () => {
+                    // reCAPTCHA expired — reset it
+                    console.log('reCAPTCHA expired, resetting...');
+                    showError('Verification expired. Please try again.');
+                    resetRecaptcha();
                 }
             });
 
-            // Also check current session on load
-            checkExistingSession();
+            // Pre-render the invisible reCAPTCHA so it's ready when user clicks send
+            recaptchaVerifier.render().then((widgetId) => {
+                console.log('reCAPTCHA widget rendered:', widgetId);
+            }).catch((error) => {
+                console.error('reCAPTCHA render error:', error);
+            });
         }
 
-        async function checkExistingSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                console.log('Existing session found:', session.user.phone);
+        function resetRecaptcha() {
+            if (recaptchaVerifier) {
+                recaptchaVerifier.clear();
+                recaptchaVerifier = null;
+            }
+            // Re-setup fresh reCAPTCHA
+            setupRecaptcha();
+        }
+
+        async function handleAuthenticatedUser(user) {
+            try {
+                // Check Firestore for existing user/relationship data
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    showApp({
+                        displayName: userData.name || null,
+                        phoneNumber: user.phoneNumber
+                    });
+                } else {
+                    // User is authenticated but hasn't set up profile yet
+                    // Show setup step
+                    currentPhone = user.phoneNumber;
+                    document.getElementById('auth').classList.remove('hidden');
+                    document.getElementById('app').classList.add('hidden');
+                    document.getElementById('phone-step').classList.add('hidden');
+                    document.getElementById('otp-step').classList.add('hidden');
+                    showSetup();
+                }
+            } catch (error) {
+                console.error('Error checking user data:', error);
                 showApp({
-                    displayName: session.user.user_metadata?.name || null,
-                    phoneNumber: session.user.phone
+                    displayName: null,
+                    phoneNumber: user.phoneNumber
                 });
             }
         }
@@ -501,7 +568,7 @@
         }
 
         // ============================================
-        // OTP FUNCTIONS (Supabase + Twilio)
+        // OTP FUNCTIONS (Firebase Phone Auth)
         // ============================================
 
         async function sendOTP() {
@@ -521,12 +588,15 @@
             document.getElementById('phone-btn-text').innerHTML = '<span class="loading"></span>';
 
             try {
-                // Send OTP via Supabase (which uses Twilio under the hood)
-                const { data, error } = await supabase.auth.signInWithOtp({
-                    phone: fullPhone,
-                });
+                // Ensure reCAPTCHA is ready
+                if (!recaptchaVerifier) {
+                    setupRecaptcha();
+                    // Give it a moment to render
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
 
-                if (error) throw error;
+                // Send OTP via Firebase Phone Auth
+                confirmationResult = await auth.signInWithPhoneNumber(fullPhone, recaptchaVerifier);
 
                 // Show OTP step
                 document.getElementById('phone-step').classList.add('hidden');
@@ -538,17 +608,22 @@
                 // Focus first OTP input
                 document.getElementById('otp-1').focus();
 
-                // Start cooldown timer (Supabase enforces 60s between OTPs)
+                // Start cooldown timer
                 startCooldown(60);
 
             } catch (error) {
                 console.error('Send OTP error:', error);
                 let errorMessage = 'Error sending verification code. ';
                 
-                if (error.message?.includes('rate limit') || error.message?.includes('60 seconds')) {
-                    errorMessage = 'Please wait 60 seconds before requesting another code.';
-                } else if (error.message?.includes('invalid') || error.message?.includes('phone')) {
+                if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many attempts. Please wait a while and try again.';
+                } else if (error.code === 'auth/invalid-phone-number') {
                     errorMessage = 'Invalid phone number format. Please check and try again.';
+                } else if (error.code === 'auth/captcha-check-failed') {
+                    errorMessage = 'Security verification failed. Please refresh the page and try again.';
+                    resetRecaptcha();
+                } else if (error.code === 'auth/quota-exceeded') {
+                    errorMessage = 'SMS quota exceeded. Please try again later.';
                 } else {
                     errorMessage += error.message || 'Please try again.';
                 }
@@ -556,6 +631,9 @@
                 showError(errorMessage);
                 btn.disabled = false;
                 document.getElementById('phone-btn-text').textContent = 'Send Verification Code 📱';
+                
+                // Reset reCAPTCHA on error so user can retry
+                resetRecaptcha();
             }
         }
 
@@ -569,35 +647,37 @@
                 return;
             }
 
+            if (!confirmationResult) {
+                showError('Session expired. Please request a new code.');
+                backToPhone();
+                return;
+            }
+
             const btn = document.getElementById('otp-btn-text');
             btn.innerHTML = '<span class="loading"></span>';
             document.getElementById('verify-otp-btn').disabled = true;
 
             try {
-                // Verify OTP with Supabase
-                const { data, error } = await supabase.auth.verifyOtp({
-                    phone: currentPhone,
-                    token: otp,
-                    type: 'sms',
-                });
+                // Verify OTP with Firebase
+                const result = await confirmationResult.confirm(otp);
+                const user = result.user;
 
-                if (error) throw error;
-
-                console.log('User verified:', data.user.phone);
+                console.log('User verified:', user.phoneNumber, 'UID:', user.uid);
                 
-                // Check if user has existing relationship data in Supabase
-                // TODO: Query your relationships table here
-                // For now, show setup
-                showSetup();
+                // handleAuthenticatedUser will be called via onAuthStateChanged
+                // But we can also handle it directly here for smoother UX
+                await handleAuthenticatedUser(user);
 
             } catch (error) {
                 console.error('Verify OTP error:', error);
                 let errorMessage = 'Invalid verification code. Please try again.';
                 
-                if (error.message?.includes('expired') || error.message?.includes('Token has expired')) {
+                if (error.code === 'auth/code-expired') {
                     errorMessage = 'Code expired. Please request a new one.';
-                } else if (error.message?.includes('invalid') || error.message?.includes('Invalid')) {
+                } else if (error.code === 'auth/invalid-verification-code') {
                     errorMessage = 'Invalid code. Please check and try again.';
+                } else if (error.code === 'auth/session-expired') {
+                    errorMessage = 'Session expired. Please request a new code.';
                 }
                 
                 showError(errorMessage);
@@ -613,11 +693,12 @@
             if (cooldownInterval) return; // Still on cooldown
 
             try {
-                const { data, error } = await supabase.auth.signInWithOtp({
-                    phone: currentPhone,
-                });
+                // Reset reCAPTCHA for new request
+                resetRecaptcha();
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                if (error) throw error;
+                // Re-send OTP via Firebase
+                confirmationResult = await auth.signInWithPhoneNumber(currentPhone, recaptchaVerifier);
 
                 showSuccess('New code sent! ✨');
                 startCooldown(60);
@@ -625,11 +706,13 @@
 
             } catch (error) {
                 console.error('Resend OTP error:', error);
-                if (error.message?.includes('60 seconds') || error.message?.includes('rate limit')) {
-                    showError('Please wait before requesting a new code.');
+                if (error.code === 'auth/too-many-requests') {
+                    showError('Too many attempts. Please wait a while before trying again.');
                 } else {
                     showError('Error resending code: ' + (error.message || 'Please try again.'));
                 }
+                // Reset reCAPTCHA on error
+                resetRecaptcha();
             }
         }
 
@@ -712,6 +795,12 @@
                 clearInterval(cooldownInterval);
                 cooldownInterval = null;
             }
+
+            // Reset confirmationResult
+            confirmationResult = null;
+
+            // Reset reCAPTCHA for fresh attempt
+            resetRecaptcha();
         }
 
         // ============================================
@@ -719,6 +808,7 @@
         // ============================================
 
         function showSetup() {
+            document.getElementById('phone-step').classList.add('hidden');
             document.getElementById('otp-step').classList.add('hidden');
             document.getElementById('setup-step').classList.remove('hidden');
             
@@ -735,8 +825,8 @@
             const relationshipStart = document.getElementById('relationship-start').value;
             const targetDate = document.getElementById('target-date').value;
 
-            if (!userName || !partnerPhone || !relationshipStart || !targetDate) {
-                showError('Please fill in all fields');
+            if (!userName || !partnerPhone || partnerPhone.length < 13 || !relationshipStart || !targetDate) {
+                showError('Please fill in all fields correctly');
                 return;
             }
 
@@ -749,34 +839,38 @@
             btn.innerHTML = '<span class="loading"></span>';
 
             try {
-                // Update user metadata with their name
-                const { error: updateError } = await supabase.auth.updateUser({
-                    data: { name: userName }
-                });
-
-                if (updateError) {
-                    console.warn('Could not update user metadata:', updateError);
+                const user = auth.currentUser;
+                if (!user) {
+                    showError('Authentication lost. Please log in again.');
+                    location.reload();
+                    return;
                 }
 
-                // TODO: Save relationship to your Supabase DB table
-                // Example:
-                // const { data, error } = await supabase
-                //     .from('relationships')
-                //     .insert({
-                //         user_phone: currentPhone,
-                //         user_name: userName,
-                //         partner_phone: partnerPhone,
-                //         relationship_start: relationshipStart,
-                //         target_date: targetDate,
-                //     });
-
-                console.log('Creating relationship:', {
-                    userName,
-                    partnerPhone,
-                    relationshipStart,
-                    targetDate
+                // Update Firebase Auth display name
+                await user.updateProfile({
+                    displayName: userName
                 });
 
+                // Save user data to Firestore
+                await db.collection('users').doc(user.uid).set({
+                    name: userName,
+                    phone: currentPhone,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Save relationship data to Firestore
+                await db.collection('relationships').add({
+                    userId: user.uid,
+                    userPhone: currentPhone,
+                    userName: userName,
+                    partnerPhone: partnerPhone,
+                    relationshipStart: relationshipStart,
+                    targetDate: targetDate,
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                console.log('Relationship created successfully!');
                 showSuccess('Relationship created! ✨');
                 
                 setTimeout(() => {
@@ -788,7 +882,7 @@
 
             } catch (error) {
                 console.error('Create relationship error:', error);
-                showError('Error creating relationship. Please try again.');
+                showError('Error creating relationship: ' + (error.message || 'Please try again.'));
                 btn.textContent = 'Start Our Forever Journey 🚀';
             }
         }
@@ -803,7 +897,10 @@
 
         async function logout() {
             try {
-                await supabase.auth.signOut();
+                await auth.signOut();
+                // Reset state
+                currentPhone = null;
+                confirmationResult = null;
                 location.reload();
             } catch (error) {
                 console.error('Logout error:', error);
