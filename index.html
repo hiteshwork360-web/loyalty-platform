@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
     <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--soft-pink:#FFD6E8;--deep-rose:#FF69B4;--purple-heart:#DA70D6;--gold-accent:#FFD700;--text-cute:#8B4789;--card-bg:rgba(255,255,255,0.85);--card-border:rgba(255,255,255,0.7);--coral:#FF7F7F;--mint:#98D8C8;--honey:#F0C05A;--lavender:#E6D5F7}
@@ -263,7 +264,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--deep-ros
     </div>
 <script>
 firebase.initializeApp({apiKey:"AIzaSyBhgBIfyMXQTB_LV9ZOTN9I1nxLUapvd_E",authDomain:"loyalty-platform-90444.firebaseapp.com",projectId:"loyalty-platform-90444",storageBucket:"loyalty-platform-90444.firebasestorage.app",messagingSenderId:"350595060753",appId:"1:350595060753:web:5a378f15a0a4d505608db0"});
-var auth=firebase.auth(),db=firebase.firestore();
+var auth=firebase.auth(),db=firebase.firestore(),storage=firebase.storage();
 var currentPhone=null,cooldownInterval=null,confirmationResult=null,recaptchaVerifier=null,currentUser=null,relationshipData=null,calendarDate=new Date(),selectedDateCategory='all',countdownTimer=null;
 var appData={calendarEvents:[],bucketList:[],travelList:[],babyNames:[],loveNotes:[],memories:[],customDateIdeas:[],favorites:{},intimateEntries:[],intimateWishlist:[]};
 var dateIdeasDB={romantic:["Candlelit dinner at home","Stargazing with hot chocolate","Write love letters to each other","Slow dance in the living room","Sunset picnic","Couples photo album","Spa day at home","Watch sunrise together","Recreate your first date","Moonlit walk"],adventure:["Spontaneous road trip","Rock climbing together","Hike to a waterfall","Hot air balloon ride","Paragliding or zip-lining","Camp under the stars","Bike ride new area","Snorkeling or scuba diving","Treasure hunt adventure","Spontaneous train ride"],cozy:["Movie marathon blanket fort","Binge new TV series all day","Read books with tea","Puzzle with music playing","Board game night","Breakfast in bed","Bath with candles and music","Build with LEGO","Create relationship scrapbook","Podcast while cuddling"],foodie:["Cook a random country meal","Blind taste test challenge","Bake a cake from scratch","Street food tour","Pizza with wild toppings","Try a new cuisine","Dessert-only dinner","Homemade ice cream","Coffee or wine tasting","Cook childhood meals"],creative:["Paint portraits of each other","Write a song together","Pottery or clay class","Tie-dye shirts","Make a time capsule","Learn a TikTok dance","Try calligraphy","Build a terrarium","Record a video diary","Design dream home plan"]};
@@ -419,6 +420,7 @@ deleteIntimateEntryById=function(id){deleteById(appData.intimateEntries,id);save
 deleteIntimateWishlistById=function(id){deleteById(appData.intimateWishlist,id);saveAppData();renderIntimateJournal();};
 })();
 
-</script><script src="./invite-logic.js"></script><script src="./test-reset.js"></script><script src="./activity-notifications.js"></script></body>
+</script><script src="./invite-logic.js"></script><script src="./test-reset.js"></script><script src="./activity-notifications.js"></script><script src="./chat-feature.js"></script></body>
 </html>
+
 
