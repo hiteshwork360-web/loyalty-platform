@@ -1,6 +1,8 @@
 (function(){
 var inviteState={pendingInvite:null};
 var serverTs=firebase.firestore.FieldValue.serverTimestamp;
+var realtimeState={relationship:null,appData:null,invite:null};
+var relationshipStatusMemory={};
 
 function safeHtml(value){
   return String(value==null?"":value)
@@ -107,6 +109,31 @@ function resetSetupButton(){
   if(btn)btn.textContent="Start Our Forever Journey";
 }
 
+function clearRealtimeListener(key){
+  if(realtimeState[key]){
+    realtimeState[key]();
+    realtimeState[key]=null;
+  }
+}
+
+function clearRealtimeListeners(){
+  clearRealtimeListener("relationship");
+  clearRealtimeListener("appData");
+  clearRealtimeListener("invite");
+}
+
+function celebrateBestPartner(relData){
+  var inviterName=(relData&&relData.memberNames&&relData.memberNames[relData.inviterPhone])||"Your love";
+  var partnerName=(relData&&relData.memberNames&&relData.memberNames[currentPhone])||"your partner";
+  var message;
+  if(currentPhone===relData.inviterPhone){
+    message="Your forever said yes. You found the most loyal partner, and your love space is now open.";
+  }else{
+    message=inviterName+" chose you with loyalty first. You truly found the best loyal partner.";
+  }
+  showSuccess(message);
+}
+
 function userRef(uid){return db.collection("users").doc(uid);}
 function relationshipRef(id){return db.collection("relationships").doc(id);}
 function inviteRef(id){return db.collection("invites").doc(id);}
@@ -182,12 +209,101 @@ function loadRelationshipByIdPatched(id){
   });
 }
 
+function refreshDashboardRealtime(){
+  if(!relationshipData)return;
+  showDashboard(relationshipData);
+}
+
+function bindAppDataRealtime(id){
+  if(!id)return;
+  clearRealtimeListener("appData");
+  realtimeState.appData=db.collection("appData").doc(id).onSnapshot(function(doc){
+    appData=normalizeAppData(doc.exists?doc.data():null);
+    if(document.getElementById("app") && !document.getElementById("app").classList.contains("hidden")){
+      refreshDashboardRealtime();
+    }
+  },function(error){
+    console.error("Realtime appData err:",error);
+  });
+}
+
+function bindInviteRealtime(id){
+  if(!id)return;
+  clearRealtimeListener("invite");
+  realtimeState.invite=inviteRef(id).onSnapshot(function(doc){
+    if(!doc.exists)return;
+    inviteState.pendingInvite={id:doc.id,data:doc.data()||{}};
+  },function(error){
+    console.error("Realtime invite err:",error);
+  });
+}
+
+function handleRelationshipSnapshot(doc){
+  if(!doc.exists){
+    clearRealtimeListeners();
+    ensureCurrentUserSeed({relationshipId:firebase.firestore.FieldValue.delete()}).then(function(){
+      showAuthSection("setup-step");
+    });
+    return;
+  }
+  var relData=doc.data()||{};
+  var status=relData.status||"active";
+  var previousStatus=relationshipStatusMemory[doc.id];
+  relationshipStatusMemory[doc.id]=status;
+  currentRelationshipId=doc.id;
+  relationshipData=relData;
+  relationshipData.id=doc.id;
+
+  if(relData.inviteId)bindInviteRealtime(relData.inviteId);
+
+  if(status==="pending"){
+    getInvite(relData.inviteId).then(function(invite){
+      if(!invite){
+        showError("Pending relationship found, but the invite record is missing.");
+        showAuthSection("setup-step");
+        return;
+      }
+      inviteState.pendingInvite=invite;
+      if(currentPhone===relData.partnerPhone)incomingUi(invite);
+      else waitingUi(invite);
+    }).catch(function(error){
+      console.error("Realtime pending err:",error);
+    });
+    return;
+  }
+
+  if(status==="rejected"||status==="cancelled"||status==="declined"){
+    clearRealtimeListener("appData");
+    ensureCurrentUserSeed({relationshipId:firebase.firestore.FieldValue.delete()}).then(function(){
+      showAuthSection("setup-step");
+    });
+    return;
+  }
+
+  bindAppDataRealtime(doc.id);
+  if(previousStatus==="pending"&&status==="active"){
+    celebrateBestPartner(relData);
+  }
+  refreshDashboardRealtime();
+}
+
+function bindRelationshipRealtime(id){
+  if(!id)return;
+  clearRealtimeListener("relationship");
+  realtimeState.relationship=relationshipRef(id).onSnapshot(function(doc){
+    handleRelationshipSnapshot(doc);
+  },function(error){
+    console.error("Realtime relationship err:",error);
+  });
+}
+
 function handleRelationshipDoc(rel){
   if(!rel)return showAuthSection("setup-step");
   var status=rel.data.status||"active";
   currentRelationshipId=rel.id;
   relationshipData=rel.data;
   relationshipData.id=rel.id;
+  bindRelationshipRealtime(rel.id);
   if(status==="pending"){
     return getInvite(rel.data.inviteId).then(function(invite){
       if(!invite){
@@ -204,6 +320,7 @@ function handleRelationshipDoc(rel){
       showAuthSection("setup-step");
     });
   }
+  bindAppDataRealtime(rel.id);
   return loadRelationshipByIdPatched(rel.id);
 }
 
@@ -294,6 +411,8 @@ createRelationship=function(){
     if(isBlockedLink(partnerLink))throw new Error("That partner number is already linked with someone. Loyalty check failed.");
     return createRelationshipBundle(name,partnerPhone,relationshipStart,targetDate);
   }).then(function(invite){
+    bindRelationshipRealtime(invite.data.relationshipId);
+    bindInviteRealtime(invite.id);
     waitingUi(invite);
     showSuccess("Invite created. Share the invite link with your partner, then they can verify with Firebase OTP and accept.");
   }).catch(function(error){
@@ -304,6 +423,7 @@ createRelationship=function(){
 
 function loadFromPhoneLink(link){
   if(!link){
+    clearRealtimeListeners();
     showAuthSection("setup-step");
     return Promise.resolve();
   }
@@ -344,6 +464,7 @@ loadUserData=function(user){
     return getPhoneLink(user.phoneNumber).then(loadFromPhoneLink);
   }).catch(function(error){
     console.error("Load err:",error);
+    clearRealtimeListeners();
     showAuthSection("setup-step");
   });
 };
