@@ -4,11 +4,55 @@ var chatState={
   unsubscribe:null,
   messages:[],
   uploadTask:null,
-  uploadProgress:0
+  uploadProgress:0,
+  initialized:false
 };
+var chatAudioContext=null;
 
 function messagesRef(id){
   return db.collection("relationships").doc(id).collection("messages");
+}
+
+function ensureChatAudio(){
+  if(chatAudioContext)return chatAudioContext;
+  var AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return null;
+  chatAudioContext=new AudioCtx();
+  return chatAudioContext;
+}
+
+function resumeChatAudio(){
+  var ctx=ensureChatAudio();
+  if(!ctx)return;
+  if(ctx.state==="suspended")ctx.resume().catch(function(){});
+}
+
+function playChatTone(kind){
+  var ctx=ensureChatAudio();
+  if(!ctx)return;
+  if(ctx.state==="suspended"){
+    ctx.resume().then(function(){playChatTone(kind);}).catch(function(){});
+    return;
+  }
+  var now=ctx.currentTime;
+  var gain=ctx.createGain();
+  var osc1=ctx.createOscillator();
+  var osc2=ctx.createOscillator();
+  var send=kind==="send";
+  osc1.type="sine";
+  osc2.type="triangle";
+  osc1.frequency.setValueAtTime(send?760:620,now);
+  osc2.frequency.setValueAtTime(send?980:820,now+(send?0.05:0.07));
+  gain.gain.setValueAtTime(0.0001,now);
+  gain.gain.exponentialRampToValueAtTime(send?0.06:0.075,now+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001,now+(send?0.16:0.22));
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ctx.destination);
+  osc1.start(now);
+  osc2.start(now+(send?0.05:0.07));
+  osc1.stop(now+(send?0.14:0.2));
+  osc2.stop(now+(send?0.16:0.22));
 }
 
 function ensureChatStyles(){
@@ -49,6 +93,7 @@ function ensureChatStyles(){
 
 function ensureChatUi(){
   ensureChatStyles();
+  resumeChatAudio();
   var nav=document.querySelector(".nav-tabs");
   var dashboard=document.querySelector(".dashboard");
   if(!nav || !dashboard)return;
@@ -398,6 +443,7 @@ function bindChatStream(){
     }
     chatState.relationshipId=null;
     chatState.messages=[];
+    chatState.initialized=false;
     renderChatMessages();
     return;
   }
@@ -405,6 +451,7 @@ function bindChatStream(){
   if(chatState.unsubscribe)chatState.unsubscribe();
   chatState.relationshipId=currentRelationshipId;
   chatState.messages=[];
+  chatState.initialized=false;
   renderChatMessages();
   chatState.unsubscribe=messagesRef(currentRelationshipId)
     .orderBy("clientCreatedAt","asc")
@@ -416,6 +463,15 @@ function bindChatStream(){
         return data;
       });
       renderChatMessages();
+      if(chatState.initialized){
+        snapshot.docChanges().forEach(function(change){
+          if(change.type!=="added")return;
+          var data=change.doc.data()||{};
+          playChatTone(data.senderPhone===currentPhone?"send":"receive");
+        });
+      }else{
+        chatState.initialized=true;
+      }
     },function(error){
       console.error("Chat realtime err:",error);
       if(typeof showError==="function")showError("Chat needs the latest Firestore rules published.");
@@ -427,6 +483,10 @@ function bootChatFeature(){
   bindPickerInputs();
   bindChatStream();
 }
+
+["click","touchstart","keydown"].forEach(function(eventName){
+  window.addEventListener(eventName,resumeChatAudio,{passive:true});
+});
 
 setInterval(bootChatFeature,1000);
 window.addEventListener("load",bootChatFeature);
