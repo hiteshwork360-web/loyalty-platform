@@ -3,943 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forever Together - Loyalty Platform 💍</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@300;400;500;600;700&family=Cookie&display=swap" rel="stylesheet">
-    
-    <!-- Firebase SDK (Modular - Compat version for simplicity in vanilla JS) -->
+    <title>Forever Together - Loyalty Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@300;400;500;600;700&family=Cookie&family=Dancing+Script:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --baby-pink: #FFB3D9;
-            --soft-pink: #FFD6E8;
-            --lavender: #E6D5F7;
-            --deep-rose: #FF69B4;
-            --purple-heart: #DA70D6;
-            --gold-accent: #FFD700;
-            --text-cute: #8B4789;
-        }
-
-        body {
-            font-family: 'Quicksand', sans-serif;
-            background: linear-gradient(135deg, #FFE5F1 0%, #FFD6E8 15%, #E6D5F7 30%, #D5E8F7 45%, #D5F7E8 60%, #FFE5F1 100%);
-            background-size: 400% 400%;
-            animation: cloudDrift 25s ease infinite;
-            min-height: 100vh;
-            color: var(--text-cute);
-            overflow-x: hidden;
-        }
-
-        @keyframes cloudDrift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .floating-hearts {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        .heart {
-            position: absolute;
-            font-size: 24px;
-            opacity: 0;
-            animation: floatHeart 20s infinite;
-        }
-
-        @keyframes floatHeart {
-            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10%, 90% { opacity: 0.8; }
-            100% { transform: translateY(-100px) rotate(360deg); }
-        }
-
-        .auth-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .auth-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 240, 250, 0.9));
-            backdrop-filter: blur(25px);
-            border-radius: 40px;
-            padding: 50px 40px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 30px 80px rgba(255, 105, 180, 0.4);
-            border: 3px solid rgba(255, 255, 255, 0.7);
-            text-align: center;
-        }
-
-        .auth-title {
-            font-family: 'Cookie', cursive;
-            font-size: 4rem;
-            background: linear-gradient(135deg, #FF69B4, #DA70D6, #FFD700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-
-        .auth-subtitle {
-            font-family: 'Pacifico', cursive;
-            font-size: 1.2rem;
-            color: var(--purple-heart);
-            margin-bottom: 40px;
-        }
-
-        .loyalty-badge {
-            background: linear-gradient(135deg, var(--gold-accent), #FFA500);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 25px;
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 30px;
-            display: inline-block;
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .input-group {
-            margin-bottom: 25px;
-            text-align: left;
-        }
-
-        .input-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--deep-rose);
-            font-size: 0.95rem;
-        }
-
-        input {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid var(--soft-pink);
-            border-radius: 20px;
-            font-family: 'Quicksand', sans-serif;
-            font-size: 1rem;
-            background: rgba(255, 255, 255, 0.9);
-            transition: all 0.3s ease;
-            font-weight: 500;
-            color: var(--text-cute);
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--deep-rose);
-            box-shadow: 0 0 0 4px rgba(255, 105, 180, 0.2);
-        }
-
-        button {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, var(--deep-rose), var(--purple-heart));
-            color: white;
-            border: none;
-            border-radius: 20px;
-            font-family: 'Quicksand', sans-serif;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 1.1rem;
-            box-shadow: 0 8px 25px rgba(255, 105, 180, 0.3);
-            margin-top: 10px;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(255, 105, 180, 0.5);
-        }
-
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .error-message {
-            background: linear-gradient(135deg, #FF6B6B, #C44569);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        .success-message {
-            background: linear-gradient(135deg, #51CF66, #37B24D);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .info-box {
-            background: linear-gradient(135deg, rgba(255, 214, 232, 0.5), rgba(230, 213, 247, 0.5));
-            padding: 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-        }
-
-        .info-title {
-            font-weight: 700;
-            color: var(--deep-rose);
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
-        .info-text {
-            color: var(--text-cute);
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        .phone-input {
-            display: flex;
-            gap: 10px;
-        }
-
-        .country-code {
-            width: 80px;
-            flex-shrink: 0;
-        }
-
-        .otp-inputs {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        .otp-input {
-            width: 50px;
-            height: 60px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .cheater-warning {
-            background: linear-gradient(135deg, #FF0000, #8B0000);
-            color: white;
-            padding: 30px;
-            border-radius: 25px;
-            margin-bottom: 20px;
-            font-weight: 700;
-            font-size: 1.3rem;
-            text-align: center;
-            animation: pulse 1s infinite;
-            border: 3px solid #FFD700;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* Cooldown timer styling */
-        .cooldown-timer {
-            display: inline-block;
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: var(--purple-heart);
-            font-weight: 600;
-        }
-
-        .cooldown-timer span {
-            color: var(--deep-rose);
-            font-weight: 700;
-        }
-
-        /* reCAPTCHA container - invisible but required by Firebase */
-        #recaptcha-container {
-            /* Firebase invisible reCAPTCHA renders here */
-        }
-
-        @media (max-width: 768px) {
-            .auth-card {
-                padding: 40px 25px;
-            }
-            .auth-title {
-                font-size: 3rem;
-            }
-        }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--soft-pink:#FFD6E8;--deep-rose:#FF69B4;--purple-heart:#DA70D6;--gold-accent:#FFD700;--text-cute:#8B4789;--card-bg:rgba(255,255,255,0.85);--card-border:rgba(255,255,255,0.7);--coral:#FF7F7F;--mint:#98D8C8;--honey:#F0C05A;--lavender:#E6D5F7}
+body{font-family:'Quicksand',sans-serif;background:linear-gradient(135deg,#FFE5F1 0%,#FFD6E8 15%,#E6D5F7 30%,#D5E8F7 45%,#D5F7E8 60%,#FFE5F1 100%);background-size:400% 400%;animation:cloudDrift 25s ease infinite;min-height:100vh;color:var(--text-cute);overflow-x:hidden}
+@keyframes cloudDrift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.floating-hearts{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.heart{position:absolute;font-size:24px;opacity:0;animation:floatHeart 20s infinite}
+@keyframes floatHeart{0%,100%{transform:translateY(100vh) rotate(0deg);opacity:0}10%,90%{opacity:0.6}100%{transform:translateY(-100px) rotate(360deg)}}
+.auth-container{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;position:relative;z-index:1}
+.auth-card{background:linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,240,250,0.9));backdrop-filter:blur(25px);border-radius:40px;padding:50px 40px;max-width:500px;width:100%;box-shadow:0 30px 80px rgba(255,105,180,0.4);border:3px solid rgba(255,255,255,0.7);text-align:center}
+.auth-title{font-family:'Cookie',cursive;font-size:4rem;background:linear-gradient(135deg,#FF69B4,#DA70D6,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px}
+.auth-subtitle{font-family:'Pacifico',cursive;font-size:1.2rem;color:var(--purple-heart);margin-bottom:40px}
+.loyalty-badge{background:linear-gradient(135deg,var(--gold-accent),#FFA500);color:white;padding:15px 25px;border-radius:25px;font-weight:700;font-size:1rem;margin-bottom:30px;display:inline-block;box-shadow:0 5px 20px rgba(255,215,0,0.4)}
+.input-group{margin-bottom:25px;text-align:left}
+.input-label{display:block;margin-bottom:8px;font-weight:600;color:var(--deep-rose);font-size:0.95rem}
+input,textarea,select{width:100%;padding:16px 20px;border:2px solid var(--soft-pink);border-radius:20px;font-family:'Quicksand',sans-serif;font-size:1rem;background:rgba(255,255,255,0.9);transition:all 0.3s ease;font-weight:500;color:var(--text-cute)}
+textarea{resize:vertical;min-height:80px}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--deep-rose);box-shadow:0 0 0 4px rgba(255,105,180,0.2)}
+.btn{width:100%;padding:18px;background:linear-gradient(135deg,var(--deep-rose),var(--purple-heart));color:white;border:none;border-radius:20px;font-family:'Quicksand',sans-serif;font-weight:700;cursor:pointer;font-size:1.1rem;box-shadow:0 8px 25px rgba(255,105,180,0.3);margin-top:10px;transition:all 0.3s ease}
+.btn:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(255,105,180,0.5)}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.btn-small{width:auto;padding:10px 24px;font-size:0.9rem;margin-top:0;border-radius:15px;display:inline-block}
+.btn-gold{background:linear-gradient(135deg,var(--gold-accent),#FFA500)}
+.btn-mint{background:linear-gradient(135deg,var(--mint),#5CB8A5)}
+.btn-coral{background:linear-gradient(135deg,var(--coral),#E85D5D)}
+.btn-lavender{background:linear-gradient(135deg,var(--lavender),#C8A8E9)}
+.btn-outline{background:transparent;color:var(--deep-rose);border:2px solid var(--deep-rose);box-shadow:none}
+.btn-outline:hover{background:var(--deep-rose);color:white}
+.error-message{background:linear-gradient(135deg,#FF6B6B,#C44569);color:white;padding:15px 20px;border-radius:15px;margin-bottom:20px;font-weight:600;animation:shake 0.5s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.success-message{background:linear-gradient(135deg,#51CF66,#37B24D);color:white;padding:15px 20px;border-radius:15px;margin-bottom:20px;font-weight:600}
+.info-box{background:linear-gradient(135deg,rgba(255,214,232,0.5),rgba(230,213,247,0.5));padding:20px;border-radius:20px;margin-bottom:20px;border:2px solid rgba(255,255,255,0.8)}
+.info-title{font-weight:700;color:var(--deep-rose);margin-bottom:10px;font-size:1.1rem}
+.info-text{color:var(--text-cute);font-size:0.95rem;line-height:1.6}
+.phone-input{display:flex;gap:10px}
+.country-code{width:80px;flex-shrink:0}
+.otp-inputs{display:flex;gap:10px;justify-content:center;margin:20px 0}
+.otp-input{width:50px;height:60px;text-align:center;font-size:1.5rem;font-weight:700}
+.hidden{display:none !important}
+.loading{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cooldown-timer{display:inline-block;margin-top:15px;font-size:0.9rem;color:var(--purple-heart);font-weight:600}
+.cooldown-timer span{color:var(--deep-rose);font-weight:700}
+.dashboard{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px;padding-bottom:100px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:20px 30px;margin-bottom:30px;background:var(--card-bg);backdrop-filter:blur(20px);border-radius:25px;border:2px solid var(--card-border);box-shadow:0 10px 40px rgba(255,105,180,0.15)}
+.top-bar-left h1{font-family:'Cookie',cursive;font-size:2.2rem;background:linear-gradient(135deg,#FF69B4,#DA70D6,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.top-bar-left p{font-family:'Dancing Script',cursive;font-size:1.1rem;color:var(--purple-heart)}
+.user-avatar{width:45px;height:45px;border-radius:50%;background:linear-gradient(135deg,var(--deep-rose),var(--purple-heart));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem;cursor:pointer;transition:transform 0.3s}
+.user-avatar:hover{transform:scale(1.1)}
+.countdown-hero{background:linear-gradient(135deg,rgba(255,105,180,0.15),rgba(218,112,214,0.15),rgba(255,215,0,0.1));backdrop-filter:blur(20px);border-radius:35px;padding:50px 40px;text-align:center;margin-bottom:30px;border:2px solid var(--card-border);box-shadow:0 20px 60px rgba(255,105,180,0.2);position:relative;overflow:hidden}
+.countdown-label{font-family:'Dancing Script',cursive;font-size:1.5rem;color:var(--purple-heart);margin-bottom:10px;position:relative}
+.countdown-date-display{font-family:'Pacifico',cursive;font-size:1.1rem;color:var(--deep-rose);margin-bottom:25px;position:relative}
+.countdown-boxes{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;position:relative}
+.countdown-box{background:var(--card-bg);border-radius:20px;padding:20px 15px;min-width:90px;box-shadow:0 8px 25px rgba(255,105,180,0.15);border:2px solid rgba(255,182,213,0.5)}
+.countdown-number{font-size:2.8rem;font-weight:700;background:linear-gradient(135deg,var(--deep-rose),var(--purple-heart));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.countdown-unit{font-size:0.75rem;font-weight:600;color:var(--purple-heart);text-transform:uppercase;letter-spacing:1px;margin-top:5px}
+.countdown-together{margin-top:25px;font-family:'Dancing Script',cursive;font-size:1.2rem;color:var(--text-cute);position:relative}
+.us-stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-bottom:30px}
+.stat-card{background:var(--card-bg);backdrop-filter:blur(15px);border-radius:20px;padding:20px;text-align:center;border:2px solid var(--card-border);box-shadow:0 8px 25px rgba(255,105,180,0.1);transition:transform 0.3s}
+.stat-card:hover{transform:translateY(-5px)}
+.stat-icon{font-size:2rem;margin-bottom:8px}
+.stat-value{font-size:1.8rem;font-weight:700;color:var(--deep-rose);line-height:1}
+.stat-label{font-size:0.75rem;color:var(--purple-heart);font-weight:600;margin-top:5px;text-transform:uppercase;letter-spacing:0.5px}
+.nav-tabs{display:flex;gap:8px;margin-bottom:30px;overflow-x:auto;padding-bottom:5px;-webkit-overflow-scrolling:touch}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:12px 20px;border-radius:20px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;white-space:nowrap;transition:all 0.3s;border:2px solid var(--soft-pink);background:var(--card-bg);color:var(--text-cute)}
+.nav-tab:hover{border-color:var(--deep-rose)}
+.nav-tab.active{background:linear-gradient(135deg,var(--deep-rose),var(--purple-heart));color:white;border-color:transparent;box-shadow:0 5px 20px rgba(255,105,180,0.3)}
+.section-panel{display:none;animation:fadeIn 0.4s ease}
+.section-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--card-bg);backdrop-filter:blur(15px);border-radius:25px;padding:30px;border:2px solid var(--card-border);box-shadow:0 10px 40px rgba(255,105,180,0.1);margin-bottom:20px}
+.card-title{font-family:'Cookie',cursive;font-size:1.8rem;color:var(--deep-rose);margin-bottom:20px}
+.list-item{display:flex;align-items:center;gap:15px;padding:15px 20px;margin-bottom:10px;background:linear-gradient(135deg,rgba(255,240,250,0.6),rgba(230,213,247,0.3));border-radius:18px;border:1px solid rgba(255,182,213,0.3);transition:all 0.3s}
+.list-item:hover{transform:translateX(5px);box-shadow:0 5px 15px rgba(255,105,180,0.1)}
+.list-item.completed{opacity:0.7;background:linear-gradient(135deg,rgba(152,216,200,0.2),rgba(200,240,230,0.2))}
+.list-item.completed .list-item-text{text-decoration:line-through}
+.list-item-check{width:28px;height:28px;border-radius:50%;border:3px solid var(--soft-pink);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;flex-shrink:0}
+.list-item-check.checked{background:linear-gradient(135deg,var(--mint),#5CB8A5);border-color:var(--mint);color:white;font-size:0.8rem}
+.list-item-content{flex:1;min-width:0}
+.list-item-text{font-weight:600;font-size:0.95rem;word-break:break-word}
+.list-item-meta{font-size:0.8rem;color:var(--purple-heart);margin-top:3px}
+.icon-btn{width:35px;height:35px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.9rem;transition:all 0.3s;background:rgba(255,105,180,0.1);padding:0}
+.icon-btn:hover{transform:scale(1.15)}
+.icon-btn.delete-btn{background:rgba(255,107,107,0.15)}
+.add-row{display:flex;gap:10px;margin-bottom:20px}
+.add-row input,.add-row select{flex:1;margin-bottom:0}
+.add-row .btn{width:auto;padding:16px 25px;margin-top:0;flex-shrink:0}
+.tag{display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.75rem;font-weight:600}
+.tag-pink{background:rgba(255,105,180,0.15);color:var(--deep-rose)}
+.tag-gold{background:rgba(255,215,0,0.2);color:#B8860B}
+.tag-sky{background:rgba(135,206,235,0.2);color:#2E86C1}
+.tag-lavender{background:rgba(218,112,214,0.15);color:#9B59B6}
+.tag-mint{background:rgba(152,216,200,0.2);color:#3D9B8F}
+.tag-coral{background:rgba(255,127,127,0.15);color:#C0392B}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:15px}
+.calendar-header{text-align:center;font-weight:700;font-size:0.75rem;color:var(--purple-heart);padding:8px 0;text-transform:uppercase}
+.calendar-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:15px;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.3s;position:relative;background:rgba(255,255,255,0.4)}
+.calendar-day:hover{background:rgba(255,105,180,0.1)}
+.calendar-day.today{border:2px solid var(--deep-rose);background:rgba(255,105,180,0.08)}
+.calendar-day.has-event::after{content:'';position:absolute;bottom:5px;width:6px;height:6px;border-radius:50%;background:var(--deep-rose)}
+.calendar-day.other-month{opacity:0.3}
+.calendar-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.calendar-nav h3{font-family:'Dancing Script',cursive;font-size:1.4rem;color:var(--deep-rose)}
+.calendar-nav button{width:40px;height:40px;border-radius:50%;padding:0;font-size:1.2rem}
+.note-card{background:linear-gradient(135deg,#FFF8E7,#FFFAF0);border-radius:20px;padding:25px;margin-bottom:15px;border:1px solid rgba(255,215,0,0.3);box-shadow:0 5px 15px rgba(255,215,0,0.1);position:relative}
+.note-date{font-size:0.75rem;color:var(--honey);font-weight:600}
+.note-text{margin-top:10px;line-height:1.7;font-family:'Dancing Script',cursive;font-size:1.1rem;color:#6B4F3F}
+.note-locked{filter:blur(5px);user-select:none;pointer-events:none}
+.note-lock-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.3);border-radius:20px;font-weight:700;color:var(--deep-rose);font-size:1rem;text-align:center;padding:20px}
+.timeline{position:relative;padding-left:40px}
+.timeline::before{content:'';position:absolute;left:15px;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--deep-rose),var(--purple-heart),var(--gold-accent));border-radius:2px}
+.timeline-item{position:relative;margin-bottom:25px;padding-left:20px}
+.timeline-item::before{content:'';position:absolute;left:-32px;top:5px;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,var(--deep-rose),var(--purple-heart));border:3px solid white}
+.timeline-date{font-size:0.8rem;color:var(--purple-heart);font-weight:600}
+.timeline-title{font-weight:700;font-size:1rem;margin-top:5px}
+.timeline-desc{font-size:0.85rem;color:var(--text-cute);margin-top:5px;line-height:1.5}
+.date-generator{text-align:center;padding:30px}
+.date-idea-display{font-family:'Dancing Script',cursive;font-size:2rem;color:var(--deep-rose);margin:30px 0;min-height:80px;display:flex;align-items:center;justify-content:center}
+.date-category-filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.category-chip{padding:8px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;border:2px solid var(--soft-pink);background:white;color:var(--text-cute);transition:all 0.3s;font-family:'Quicksand',sans-serif}
+.category-chip.active{background:var(--deep-rose);color:white;border-color:var(--deep-rose)}
+.spin-animation{animation:spinIdea 0.5s ease}
+@keyframes spinIdea{0%{transform:rotateX(0deg);opacity:1}50%{transform:rotateX(90deg);opacity:0}100%{transform:rotateX(0deg);opacity:1}}
+.favorites-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px}
+.fav-card{background:linear-gradient(135deg,rgba(255,240,250,0.8),rgba(230,213,247,0.5));border-radius:20px;padding:20px;border:1px solid rgba(255,182,213,0.3);transition:transform 0.3s}
+.fav-card:hover{transform:translateY(-3px)}
+.fav-icon{font-size:2rem;margin-bottom:10px}
+.fav-label{font-size:0.8rem;color:var(--purple-heart);font-weight:600;text-transform:uppercase}
+.fav-value-input{font-family:'Dancing Script',cursive;font-size:1.2rem;border:none;border-bottom:2px dashed var(--soft-pink);border-radius:0;padding:5px;background:transparent;color:var(--deep-rose)}
+.fav-value-input:focus{border-color:var(--deep-rose);box-shadow:none}
+.intimate-entry{background:linear-gradient(135deg,rgba(255,200,200,0.15),rgba(255,180,220,0.15));border-radius:20px;padding:20px;margin-bottom:15px;border:1px solid rgba(255,105,180,0.15)}
+.intimate-entry-date{font-size:0.75rem;color:var(--coral);font-weight:600}
+.mood-grid{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.mood-option{font-size:1.8rem;cursor:pointer;padding:8px;border-radius:15px;transition:all 0.3s;border:2px solid transparent}
+.mood-option:hover{transform:scale(1.2)}
+.mood-option.selected{border-color:var(--deep-rose);background:rgba(255,105,180,0.1);transform:scale(1.2)}
+.name-section{margin-bottom:20px}
+.name-section-title{font-family:'Dancing Script',cursive;font-size:1.3rem;color:var(--deep-rose);margin-bottom:10px}
+.name-item{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;margin:4px;border-radius:20px;background:linear-gradient(135deg,rgba(255,240,250,0.8),rgba(255,255,255,0.9));border:1px solid rgba(255,182,213,0.3);font-weight:600}
+.name-item .heart-count{font-size:0.75rem;color:var(--deep-rose);font-weight:700}
+.name-item.both-loved{background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,200,0,0.1));border-color:rgba(255,215,0,0.4);box-shadow:0 3px 12px rgba(255,215,0,0.2)}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal{background:white;border-radius:30px;padding:35px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 25px 80px rgba(0,0,0,0.2);animation:modalIn 0.3s ease}
+@keyframes modalIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{font-family:'Cookie',cursive;font-size:1.8rem;color:var(--deep-rose);margin-bottom:20px;text-align:center}
+.empty-state{text-align:center;padding:40px 20px;color:var(--purple-heart)}
+.empty-state-icon{font-size:3rem;margin-bottom:15px}
+.empty-state-text{font-family:'Dancing Script',cursive;font-size:1.2rem}
+.profile-dropdown{position:absolute;top:75px;right:20px;background:white;border-radius:20px;padding:15px;box-shadow:0 15px 50px rgba(0,0,0,0.15);border:2px solid var(--card-border);min-width:220px;z-index:100}
+.profile-dropdown-item{padding:12px 15px;border-radius:12px;cursor:pointer;font-weight:600;font-size:0.9rem;transition:background 0.2s;display:flex;align-items:center;gap:10px}
+.profile-dropdown-item:hover{background:rgba(255,105,180,0.08)}
+.star{cursor:pointer;font-size:1.3rem;transition:transform 0.2s}
+.star:hover{transform:scale(1.3)}
+@media(max-width:768px){.auth-card{padding:40px 25px}.auth-title{font-size:3rem}.dashboard{padding:10px}.top-bar{padding:15px 20px;flex-direction:column;gap:10px}.countdown-hero{padding:30px 20px}.countdown-number{font-size:2rem}.countdown-box{min-width:70px;padding:15px 10px}.us-stats-bar{grid-template-columns:repeat(2,1fr)}.add-row{flex-direction:column}.favorites-grid{grid-template-columns:1fr}.nav-tab{padding:10px 15px;font-size:0.8rem}}
     </style>
 </head>
 <body>
     <div class="floating-hearts" id="hearts"></div>
-
-    <!-- Invisible reCAPTCHA container (required by Firebase Phone Auth) -->
     <div id="recaptcha-container"></div>
-
     <div id="auth" class="auth-container">
         <div class="auth-card">
             <h1 class="auth-title">Forever Together</h1>
-            <p class="auth-subtitle">One Love, One Life, One Account 💍</p>
-            <div class="loyalty-badge">🔒 Loyalty-First Platform 🔒</div>
-
+            <p class="auth-subtitle">One Love, One Life, One Account</p>
+            <div class="loyalty-badge">Loyalty-First Platform</div>
             <div id="message-container"></div>
-
-            <!-- Step 1: Phone Number Entry -->
             <div id="phone-step">
-                <div class="info-box">
-                    <div class="info-title">🛡️ Strict Loyalty Rules</div>
-                    <div class="info-text">
-                        ✅ One phone number = One partner only<br>
-                        ✅ No cheating allowed<br>
-                        ✅ Delete current relationship before starting new one<br>
-                        ✅ Your data is sacred & private
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Your Phone Number</label>
-                    <div class="phone-input">
-                        <input type="text" id="country-code" class="country-code" value="+91" readonly>
-                        <input type="tel" id="phone-number" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}">
-                    </div>
-                </div>
-
-                <button onclick="sendOTP()" id="send-otp-btn">
-                    <span id="phone-btn-text">Send Verification Code 📱</span>
-                </button>
-
-                <div style="margin-top: 20px; font-size: 0.85rem; color: var(--text-cute); text-align: center;">
-                    By continuing, you agree to our loyalty-first policy
-                </div>
+                <div class="info-box"><div class="info-title">Strict Loyalty Rules</div><div class="info-text">One phone = One partner only<br>No cheating allowed<br>Delete current relationship before starting new<br>Your data is sacred &amp; private</div></div>
+                <div class="input-group"><label class="input-label">Your Phone Number</label><div class="phone-input"><input type="text" id="country-code" class="country-code" value="+91" readonly><input type="tel" id="phone-number" placeholder="9876543210" maxlength="10"></div></div>
+                <button class="btn" onclick="sendOTP()" id="send-otp-btn"><span id="phone-btn-text">Send Verification Code</span></button>
             </div>
-
-            <!-- Step 2: OTP Verification -->
             <div id="otp-step" class="hidden">
-                <div class="info-box">
-                    <div class="info-title">📱 Verify Your Number</div>
-                    <div class="info-text">
-                        Enter the 6-digit code sent to:<br>
-                        <strong id="phone-display"></strong>
-                    </div>
-                </div>
-
+                <div class="info-box"><div class="info-title">Verify Your Number</div><div class="info-text">Enter the 6-digit code sent to:<br><strong id="phone-display"></strong></div></div>
                 <div class="otp-inputs">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-1" oninput="moveToNext(this, 'otp-2')" onkeydown="handleOtpKeydown(event, null)">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-2" oninput="moveToNext(this, 'otp-3')" onkeydown="handleOtpKeydown(event, 'otp-1')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-3" oninput="moveToNext(this, 'otp-4')" onkeydown="handleOtpKeydown(event, 'otp-2')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-4" oninput="moveToNext(this, 'otp-5')" onkeydown="handleOtpKeydown(event, 'otp-3')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-5" oninput="moveToNext(this, 'otp-6')" onkeydown="handleOtpKeydown(event, 'otp-4')">
-                    <input type="text" class="otp-input" maxlength="1" id="otp-6" oninput="autoVerify()" onkeydown="handleOtpKeydown(event, 'otp-5')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-1" oninput="moveToNext(this,'otp-2')" onkeydown="handleOtpKeydown(event,null)">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-2" oninput="moveToNext(this,'otp-3')" onkeydown="handleOtpKeydown(event,'otp-1')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-3" oninput="moveToNext(this,'otp-4')" onkeydown="handleOtpKeydown(event,'otp-2')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-4" oninput="moveToNext(this,'otp-5')" onkeydown="handleOtpKeydown(event,'otp-3')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-5" oninput="moveToNext(this,'otp-6')" onkeydown="handleOtpKeydown(event,'otp-4')">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-6" oninput="autoVerify()" onkeydown="handleOtpKeydown(event,'otp-5')">
                 </div>
-
-                <button onclick="verifyOTP()" id="verify-otp-btn">
-                    <span id="otp-btn-text">Verify Code ✅</span>
-                </button>
-
-                <div style="margin-top: 15px; text-align: center;">
-                    <a href="#" onclick="backToPhone(); return false;" style="color: var(--purple-heart); font-size: 0.9rem;">← Change Number</a>
-                    &nbsp;&nbsp;|&nbsp;&nbsp;
-                    <a href="#" id="resend-link" onclick="resendOTP(); return false;" style="color: var(--purple-heart); font-size: 0.9rem;">Resend Code</a>
-                </div>
-                <div id="cooldown-display" class="cooldown-timer hidden">
-                    Resend available in <span id="cooldown-seconds">60</span>s
-                </div>
+                <button class="btn" onclick="verifyOTP()" id="verify-otp-btn"><span id="otp-btn-text">Verify Code</span></button>
+                <div style="margin-top:15px;text-align:center;"><a href="#" onclick="backToPhone();return false;" style="color:var(--purple-heart);font-size:0.9rem;">Change Number</a> | <a href="#" id="resend-link" onclick="resendOTP();return false;" style="color:var(--purple-heart);font-size:0.9rem;">Resend Code</a></div>
+                <div id="cooldown-display" class="cooldown-timer hidden">Resend in <span id="cooldown-seconds">60</span>s</div>
             </div>
-
-            <!-- Step 3: Setup -->
             <div id="setup-step" class="hidden">
-                <div class="info-box">
-                    <div class="info-title">💕 Create Your Love Journey</div>
-                    <div class="info-text">
-                        Set up your relationship profile
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Your Name</label>
-                    <input type="text" id="user-name" placeholder="Your name">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Partner's Phone Number</label>
-                    <div class="phone-input">
-                        <input type="text" class="country-code" value="+91" readonly>
-                        <input type="tel" id="partner-phone" placeholder="9876543210" maxlength="10">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">When did you start dating?</label>
-                    <input type="date" id="relationship-start">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Your Special Future Date</label>
-                    <input type="date" id="target-date">
-                </div>
-
-                <button onclick="createRelationship()">
-                    <span id="setup-btn-text">Start Our Forever Journey 🚀</span>
-                </button>
+                <div class="info-box"><div class="info-title">Create Your Love Journey</div><div class="info-text">Set up your relationship profile</div></div>
+                <div class="input-group"><label class="input-label">Your Name</label><input type="text" id="user-name" placeholder="Your name"></div>
+                <div class="input-group"><label class="input-label">Partner Phone</label><div class="phone-input"><input type="text" class="country-code" value="+91" readonly><input type="tel" id="partner-phone" placeholder="9876543210" maxlength="10"></div></div>
+                <div class="input-group"><label class="input-label">When did you start dating?</label><input type="date" id="relationship-start"></div>
+                <div class="input-group"><label class="input-label">Your Special Future Date</label><input type="date" id="target-date"></div>
+                <button class="btn" onclick="createRelationship()"><span id="setup-btn-text">Start Our Forever Journey</span></button>
             </div>
         </div>
     </div>
-
     <div id="app" class="hidden">
-        <div style="text-align: center; padding: 100px 20px;">
-            <h1 style="font-family: 'Cookie', cursive; font-size: 4rem; color: var(--deep-rose);">
-                Welcome! 💕
-            </h1>
-            <p style="font-size: 1.2rem; color: var(--text-cute); margin-top: 20px;" id="welcome-message">
-                Loading your love journey...
-            </p>
-            <button onclick="logout()" style="max-width: 300px; margin: 40px auto;">
-                Logout 👋
-            </button>
+        <div class="dashboard">
+            <div class="top-bar">
+                <div class="top-bar-left"><h1>Forever Together</h1><p id="couple-tagline">Loading...</p></div>
+                <div class="top-bar-right"><div class="user-avatar" id="user-avatar" onclick="toggleProfileDropdown()">?</div></div>
+            </div>
+            <div id="profile-dropdown" class="profile-dropdown hidden">
+                <div class="profile-dropdown-item" style="pointer-events:none;opacity:0.8;"><span id="dropdown-name">User</span></div>
+                <div class="profile-dropdown-item" onclick="editCountdownDate()">Edit Special Date</div>
+                <div class="profile-dropdown-item" onclick="logout()" style="color:var(--coral);">Logout</div>
+            </div>
+            <div class="countdown-hero">
+                <div class="countdown-label" id="countdown-label">Counting down to our forever...</div>
+                <div class="countdown-date-display" id="countdown-date-display"></div>
+                <div class="countdown-boxes">
+                    <div class="countdown-box"><div class="countdown-number" id="cd-days">--</div><div class="countdown-unit">Days</div></div>
+                    <div class="countdown-box"><div class="countdown-number" id="cd-hours">--</div><div class="countdown-unit">Hours</div></div>
+                    <div class="countdown-box"><div class="countdown-number" id="cd-mins">--</div><div class="countdown-unit">Minutes</div></div>
+                    <div class="countdown-box"><div class="countdown-number" id="cd-secs">--</div><div class="countdown-unit">Seconds</div></div>
+                </div>
+                <div class="countdown-together" id="days-together"></div>
+            </div>
+            <div class="us-stats-bar">
+                <div class="stat-card"><div class="stat-icon">💕</div><div class="stat-value" id="stat-days">0</div><div class="stat-label">Days Together</div></div>
+                <div class="stat-card"><div class="stat-icon">✈️</div><div class="stat-value" id="stat-trips">0</div><div class="stat-label">Dream Trips</div></div>
+                <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-value" id="stat-bucket">0%</div><div class="stat-label">Bucket List</div></div>
+                <div class="stat-card"><div class="stat-icon">💌</div><div class="stat-value" id="stat-notes">0</div><div class="stat-label">Love Notes</div></div>
+                <div class="stat-card"><div class="stat-icon">📸</div><div class="stat-value" id="stat-memories">0</div><div class="stat-label">Memories</div></div>
+                <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="stat-intimate">0</div><div class="stat-label">Adventures</div></div>
+            </div>
+            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="switchTab('calendar')">📅 Calendar</div>
+                <div class="nav-tab" onclick="switchTab('bucket')">🎯 Bucket List</div>
+                <div class="nav-tab" onclick="switchTab('travel')">✈️ Travel</div>
+                <div class="nav-tab" onclick="switchTab('baby-names')">👶 Baby Names</div>
+                <div class="nav-tab" onclick="switchTab('love-notes')">💌 Love Notes</div>
+                <div class="nav-tab" onclick="switchTab('memories')">📸 Memories</div>
+                <div class="nav-tab" onclick="switchTab('date-night')">🎲 Date Night</div>
+                <div class="nav-tab" onclick="switchTab('favorites')">🎵 Favorites</div>
+                <div class="nav-tab" onclick="switchTab('intimate')">🔥 Intimate</div>
+            </div>
+            <div class="section-panel active" id="panel-calendar"><div class="card"><div class="card-title">📅 Our Love Calendar</div><div class="calendar-nav"><button class="btn btn-small btn-outline" onclick="changeMonth(-1)">&larr;</button><h3 id="calendar-month-label"></h3><button class="btn btn-small btn-outline" onclick="changeMonth(1)">&rarr;</button></div><div class="calendar-grid" id="calendar-grid"></div><div style="margin-top:20px;"><button class="btn btn-small btn-gold" onclick="openEventModal()">+ Add Event</button></div><div id="calendar-events-list" style="margin-top:20px;"></div></div></div>
+            <div class="section-panel" id="panel-bucket"><div class="card"><div class="card-title">🎯 Our Bucket List</div><div class="add-row"><input type="text" id="bucket-input" placeholder="Something amazing to do together..."><button class="btn btn-small" onclick="addBucketItem()">+ Add</button></div><div id="bucket-list"></div><div id="bucket-empty" class="empty-state"><div class="empty-state-icon">🎯</div><div class="empty-state-text">Start adding things you want to do together!</div></div></div></div>
+            <div class="section-panel" id="panel-travel"><div class="card"><div class="card-title">✈️ Travel Dreams</div><div class="add-row"><input type="text" id="travel-dest-input" placeholder="Dream destination..."><input type="text" id="travel-note-input" placeholder="Notes" style="max-width:200px;"><button class="btn btn-small btn-mint" onclick="addTravelDest()">+ Add</button></div><div id="travel-list"></div><div id="travel-empty" class="empty-state"><div class="empty-state-icon">🌍</div><div class="empty-state-text">Where do you dream of going together?</div></div></div></div>
+            <div class="section-panel" id="panel-baby-names"><div class="card"><div class="card-title">👶 Future Baby Names</div><div class="add-row"><input type="text" id="baby-name-input" placeholder="A beautiful name..."><select id="baby-name-gender" style="max-width:130px;"><option value="boy">Boy</option><option value="girl">Girl</option><option value="neutral">Neutral</option></select><button class="btn btn-small btn-lavender" onclick="addBabyName()">+ Add</button></div><div class="name-section"><div class="name-section-title">👦 Boy Names</div><div id="boy-names-list"></div></div><div class="name-section"><div class="name-section-title">👧 Girl Names</div><div id="girl-names-list"></div></div><div class="name-section"><div class="name-section-title">🌈 Neutral Names</div><div id="neutral-names-list"></div></div><div id="baby-names-empty" class="empty-state"><div class="empty-state-icon">👶</div><div class="empty-state-text">What would you name your little ones?</div></div></div></div>
+            <div class="section-panel" id="panel-love-notes"><div class="card"><div class="card-title">💌 Love Notes &amp; Time Capsules</div><button class="btn btn-small btn-gold" onclick="openNoteModal()" style="margin-bottom:20px;">+ Write Note</button><div id="notes-list"></div><div id="notes-empty" class="empty-state"><div class="empty-state-icon">💌</div><div class="empty-state-text">Write sweet notes... even set future open dates!</div></div></div></div>
+            <div class="section-panel" id="panel-memories"><div class="card"><div class="card-title">📸 Memory Timeline</div><button class="btn btn-small" onclick="openMemoryModal()" style="margin-bottom:20px;">+ Add Memory</button><div class="timeline" id="memories-timeline"></div><div id="memories-empty" class="empty-state"><div class="empty-state-icon">📸</div><div class="empty-state-text">Document your beautiful journey!</div></div></div></div>
+            <div class="section-panel" id="panel-date-night"><div class="card"><div class="card-title">🎲 Date Night Generator</div><div class="date-generator"><div class="date-category-filters"><div class="category-chip active" onclick="toggleDateCategory(this,'all')">All</div><div class="category-chip" onclick="toggleDateCategory(this,'romantic')">Romantic</div><div class="category-chip" onclick="toggleDateCategory(this,'adventure')">Adventure</div><div class="category-chip" onclick="toggleDateCategory(this,'cozy')">Cozy</div><div class="category-chip" onclick="toggleDateCategory(this,'foodie')">Foodie</div><div class="category-chip" onclick="toggleDateCategory(this,'creative')">Creative</div></div><div class="date-idea-display" id="date-idea-display">Press the button for a date idea!</div><button class="btn" onclick="generateDateIdea()" style="max-width:300px;margin:0 auto;">Spin for a Date Idea!</button><div style="margin-top:20px;"><button class="btn btn-small btn-outline" onclick="openCustomDateModal()">+ Add Your Own</button></div></div></div></div>
+            <div class="section-panel" id="panel-favorites"><div class="card"><div class="card-title">🎵 Our Favorites</div><div class="favorites-grid" id="favorites-grid"></div></div></div>
+            <div class="section-panel" id="panel-intimate"><div class="card"><div class="card-title">🔥 Intimate Journal</div><p style="font-size:0.85rem;color:var(--purple-heart);margin-bottom:20px;text-align:center;">Completely private - only you two can see this</p><button class="btn btn-small btn-coral" onclick="openIntimateModal()" style="margin-bottom:20px;">+ Add Entry</button><div id="intimate-list"></div><div id="intimate-wishlist" style="margin-top:20px;"></div><div id="intimate-empty" class="empty-state"><div class="empty-state-icon">🔥</div><div class="empty-state-text">A private space for your intimate journey</div></div></div></div>
         </div>
     </div>
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-title" id="modal-title">Modal</div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyBhgBIfyMXQTB_LV9ZOTN9I1nxLUapvd_E",authDomain:"loyalty-platform-90444.firebaseapp.com",projectId:"loyalty-platform-90444",storageBucket:"loyalty-platform-90444.firebasestorage.app",messagingSenderId:"350595060753",appId:"1:350595060753:web:5a378f15a0a4d505608db0"});
+var auth=firebase.auth(),db=firebase.firestore();
+var currentPhone=null,cooldownInterval=null,confirmationResult=null,recaptchaVerifier=null,currentUser=null,relationshipData=null,calendarDate=new Date(),selectedDateCategory='all',countdownTimer=null;
+var appData={calendarEvents:[],bucketList:[],travelList:[],babyNames:[],loveNotes:[],memories:[],customDateIdeas:[],favorites:{},intimateEntries:[],intimateWishlist:[]};
+var dateIdeasDB={romantic:["Candlelit dinner at home","Stargazing with hot chocolate","Write love letters to each other","Slow dance in the living room","Sunset picnic","Couples photo album","Spa day at home","Watch sunrise together","Recreate your first date","Moonlit walk"],adventure:["Spontaneous road trip","Rock climbing together","Hike to a waterfall","Hot air balloon ride","Paragliding or zip-lining","Camp under the stars","Bike ride new area","Snorkeling or scuba diving","Treasure hunt adventure","Spontaneous train ride"],cozy:["Movie marathon blanket fort","Binge new TV series all day","Read books with tea","Puzzle with music playing","Board game night","Breakfast in bed","Bath with candles and music","Build with LEGO","Create relationship scrapbook","Podcast while cuddling"],foodie:["Cook a random country meal","Blind taste test challenge","Bake a cake from scratch","Street food tour","Pizza with wild toppings","Try a new cuisine","Dessert-only dinner","Homemade ice cream","Coffee or wine tasting","Cook childhood meals"],creative:["Paint portraits of each other","Write a song together","Pottery or clay class","Tie-dye shirts","Make a time capsule","Learn a TikTok dance","Try calligraphy","Build a terrarium","Record a video diary","Design dream home plan"]};
+var favoritesTemplate=[{key:'song',icon:'🎵',label:'Our Song'},{key:'movie',icon:'🎬',label:'Our Movie'},{key:'restaurant',icon:'🍽️',label:'Our Restaurant'},{key:'place',icon:'📍',label:'Our Place'},{key:'show',icon:'📺',label:'Our Show'},{key:'food',icon:'🍕',label:'Our Food'},{key:'memory',icon:'💭',label:'Favorite Memory'},{key:'nickname',icon:'🥰',label:'Nickname for You'},{key:'inside_joke',icon:'😂',label:'Inside Joke'},{key:'dream',icon:'🌟',label:'Biggest Dream'},{key:'color',icon:'🎨',label:'Our Color'},{key:'season',icon:'🍂',label:'Our Season'}];
+var intimateMoods=['🥰','😍','🔥','💕','✨','😊','🥵','💫','🌙','🦋'];
 
-    <script>
-        // ============================================
-        // FIREBASE CONFIGURATION
-        // ============================================
-        
-        // ⚠️  REPLACE THESE with your actual Firebase project values
-        //     Found in: Firebase Console → Project Settings → General → Your apps → Web app
-        const firebaseConfig = {
-            apiKey: "AIzaSyBhgBIfyMXQTB_LV9ZOTN9I1nxLUapvd_E",
-            authDomain: "loyalty-platform-90444.firebaseapp.com",
-            projectId: "loyalty-platform-90444",
-            storageBucket: "loyalty-platform-90444.firebasestorage.app",
-            messagingSenderId: "350595060753",
-            appId: "1:350595060753:web:5a378f15a0a4d505608db0"
-        };
+function init(){for(var i=0;i<25;i++)createHeart();setupRecaptcha();auth.onAuthStateChanged(function(u){if(u){currentUser=u;currentPhone=u.phoneNumber;loadUserData(u)}})}
+function createHeart(){var h=['💕','💖','💗','💝','💞','💓','❤️','🩷','💘','💌','💍'];var el=document.createElement('div');el.className='heart';el.innerHTML=h[Math.floor(Math.random()*h.length)];el.style.left=Math.random()*100+'%';el.style.animationDuration=(Math.random()*10+15)+'s';el.style.animationDelay=Math.random()*5+'s';document.getElementById('hearts').appendChild(el)}
+function setupRecaptcha(){recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible',callback:function(){},'expired-callback':function(){showError('Verification expired');resetRecaptcha()}});recaptchaVerifier.render().catch(function(e){console.error('reCAPTCHA err:',e)})}
+function resetRecaptcha(){if(recaptchaVerifier){recaptchaVerifier.clear();recaptchaVerifier=null}setupRecaptcha()}
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+function sendOTP(){var ph=document.getElementById('phone-number').value.trim(),cc=document.getElementById('country-code').value;if(!ph||ph.length!==10){showError('Enter valid 10-digit number');return}var fp=cc+ph;currentPhone=fp;var btn=document.getElementById('send-otp-btn');btn.disabled=true;document.getElementById('phone-btn-text').innerHTML='<span class="loading"></span>';if(!recaptchaVerifier){setupRecaptcha()}setTimeout(function(){auth.signInWithPhoneNumber(fp,recaptchaVerifier).then(function(cr){confirmationResult=cr;document.getElementById('phone-step').classList.add('hidden');document.getElementById('otp-step').classList.remove('hidden');document.getElementById('phone-display').textContent=fp;showSuccess('Code sent!');document.getElementById('otp-1').focus();startCooldown(60)}).catch(function(e){console.error('Send err:',e);var m='Error sending code. ';if(e.code==='auth/too-many-requests')m='Too many attempts. Wait.';else if(e.code==='auth/invalid-phone-number')m='Invalid number.';else if(e.code==='auth/captcha-check-failed'){m='Security check failed.';resetRecaptcha()}else m+=e.message||'';showError(m);btn.disabled=false;document.getElementById('phone-btn-text').textContent='Send Verification Code';resetRecaptcha()})},500)}
 
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+function verifyOTP(){var otp='';for(var i=1;i<=6;i++)otp+=document.getElementById('otp-'+i).value;if(otp.length!==6){showError('Enter complete 6-digit code');return}if(!confirmationResult){showError('Session expired');backToPhone();return}document.getElementById('otp-btn-text').innerHTML='<span class="loading"></span>';document.getElementById('verify-otp-btn').disabled=true;confirmationResult.confirm(otp).then(function(r){currentUser=r.user;loadUserData(r.user)}).catch(function(e){console.error('Verify err:',e);showError(e.code==='auth/code-expired'?'Code expired':'Invalid code');document.getElementById('otp-btn-text').textContent='Verify Code';document.getElementById('verify-otp-btn').disabled=false;clearOtpInputs()})}
 
-        // ============================================
-        // STATE
-        // ============================================
-        
-        let currentPhone = null;
-        let cooldownInterval = null;
-        let confirmationResult = null;  // Firebase stores the OTP verification handle here
-        let recaptchaVerifier = null;
+function resendOTP(){if(cooldownInterval)return;resetRecaptcha();setTimeout(function(){auth.signInWithPhoneNumber(currentPhone,recaptchaVerifier).then(function(cr){confirmationResult=cr;showSuccess('New code sent!');startCooldown(60);clearOtpInputs()}).catch(function(e){showError(e.code==='auth/too-many-requests'?'Too many attempts':'Error: '+e.message);resetRecaptcha()})},500)}
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        
-        function init() {
-            // Create floating hearts
-            for (let i = 0; i < 25; i++) createHeart();
+function moveToNext(c,n){if(c.value.length===1){var el=document.getElementById(n);if(el)el.focus()}}
+function handleOtpKeydown(e,p){if(e.key==='Backspace'&&e.target.value===''&&p){var el=document.getElementById(p);if(el){el.value='';el.focus()}}}
+function autoVerify(){var o='';for(var i=1;i<=6;i++)o+=document.getElementById('otp-'+i).value;if(o.length===6)verifyOTP()}
+function clearOtpInputs(){for(var i=1;i<=6;i++)document.getElementById('otp-'+i).value='';document.getElementById('otp-1').focus()}
+function startCooldown(s){var rl=document.getElementById('resend-link'),cd=document.getElementById('cooldown-display'),cs=document.getElementById('cooldown-seconds');rl.style.pointerEvents='none';rl.style.opacity='0.4';cd.classList.remove('hidden');var r=s;cs.textContent=r;cooldownInterval=setInterval(function(){r--;cs.textContent=r;if(r<=0){clearInterval(cooldownInterval);cooldownInterval=null;rl.style.pointerEvents='auto';rl.style.opacity='1';cd.classList.add('hidden')}},1000)}
+function backToPhone(){document.getElementById('otp-step').classList.add('hidden');document.getElementById('phone-step').classList.remove('hidden');clearOtpInputs();document.getElementById('send-otp-btn').disabled=false;document.getElementById('phone-btn-text').textContent='Send Verification Code';if(cooldownInterval){clearInterval(cooldownInterval);cooldownInterval=null}confirmationResult=null;resetRecaptcha()}
 
-            // Setup invisible reCAPTCHA (required by Firebase Phone Auth)
-            setupRecaptcha();
-            
-            // Listen for auth state changes
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    console.log('User logged in:', user.phoneNumber);
-                    // Check Firestore for existing relationship data
-                    await handleAuthenticatedUser(user);
-                }
-            });
-        }
+function loadUserData(user){db.collection('users').doc(user.uid).get().then(function(doc){if(doc.exists){relationshipData=doc.data();db.collection('appData').doc(user.uid).get().then(function(ad){if(ad.exists){var s=ad.data();for(var k in s)if(s.hasOwnProperty(k))appData[k]=s[k]}showDashboard(relationshipData)})}else{document.getElementById('auth').classList.remove('hidden');document.getElementById('app').classList.add('hidden');document.getElementById('phone-step').classList.add('hidden');document.getElementById('otp-step').classList.add('hidden');document.getElementById('setup-step').classList.remove('hidden');var td=new Date();td.setMonth(td.getMonth()+17);document.getElementById('target-date').value=td.toISOString().split('T')[0]}}).catch(function(e){console.error('Load err:',e);showDashboard({name:'Love',phone:user.phoneNumber})})}
 
-        function setupRecaptcha() {
-            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'invisible',
-                'callback': (response) => {
-                    // reCAPTCHA solved — will proceed with sendOTP
-                    console.log('reCAPTCHA verified');
-                },
-                'expired-callback': () => {
-                    // reCAPTCHA expired — reset it
-                    console.log('reCAPTCHA expired, resetting...');
-                    showError('Verification expired. Please try again.');
-                    resetRecaptcha();
-                }
-            });
+function createRelationship(){var un=document.getElementById('user-name').value.trim(),pp='+91'+document.getElementById('partner-phone').value.trim(),rs=document.getElementById('relationship-start').value,td=document.getElementById('target-date').value;if(!un||!pp||pp.length<13||!rs||!td){showError('Fill all fields');return}if(pp===currentPhone){showError('Cannot add yourself!');return}document.getElementById('setup-btn-text').innerHTML='<span class="loading"></span>';var u=auth.currentUser;u.updateProfile({displayName:un}).then(function(){var ud={name:un,phone:currentPhone,partnerPhone:pp,relationshipStart:rs,targetDate:td,createdAt:firebase.firestore.FieldValue.serverTimestamp()};db.collection('users').doc(u.uid).set(ud).then(function(){relationshipData=ud;showSuccess('Relationship created!');setTimeout(function(){showDashboard(ud)},1500)}).catch(function(e){showError('Error: '+e.message);document.getElementById('setup-btn-text').textContent='Start Our Forever Journey'})})}
 
-            // Pre-render the invisible reCAPTCHA so it's ready when user clicks send
-            recaptchaVerifier.render().then((widgetId) => {
-                console.log('reCAPTCHA widget rendered:', widgetId);
-            }).catch((error) => {
-                console.error('reCAPTCHA render error:', error);
-            });
-        }
+function showDashboard(ud){document.getElementById('auth').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('couple-tagline').textContent=(ud.name||'Love')+"'s Love Journey";document.getElementById('user-avatar').textContent=(ud.name||'?')[0].toUpperCase();document.getElementById('dropdown-name').textContent=ud.name||'User';if(ud.targetDate)startCountdown(ud.targetDate);if(ud.relationshipStart){var days=Math.floor((new Date()-new Date(ud.relationshipStart))/(864e5));document.getElementById('days-together').textContent=days+' beautiful days together';document.getElementById('stat-days').textContent=days}renderCalendar();renderBucketList();renderTravelList();renderBabyNames();renderLoveNotes();renderMemories();renderFavorites();renderIntimateJournal();updateStats()}
 
-        function resetRecaptcha() {
-            if (recaptchaVerifier) {
-                recaptchaVerifier.clear();
-                recaptchaVerifier = null;
-            }
-            // Re-setup fresh reCAPTCHA
-            setupRecaptcha();
-        }
+function saveAppData(){if(!currentUser)return;db.collection('appData').doc(currentUser.uid).set(appData,{merge:true}).catch(function(e){console.error('Save err:',e)})}
 
-        async function handleAuthenticatedUser(user) {
-            try {
-                // Check Firestore for existing user/relationship data
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    showApp({
-                        displayName: userData.name || null,
-                        phoneNumber: user.phoneNumber
-                    });
-                } else {
-                    // User is authenticated but hasn't set up profile yet
-                    // Show setup step
-                    currentPhone = user.phoneNumber;
-                    document.getElementById('auth').classList.remove('hidden');
-                    document.getElementById('app').classList.add('hidden');
-                    document.getElementById('phone-step').classList.add('hidden');
-                    document.getElementById('otp-step').classList.add('hidden');
-                    showSetup();
-                }
-            } catch (error) {
-                console.error('Error checking user data:', error);
-                showApp({
-                    displayName: null,
-                    phoneNumber: user.phoneNumber
-                });
-            }
-        }
+function startCountdown(tds){var t=new Date(tds+'T00:00:00');document.getElementById('countdown-date-display').textContent=t.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});if(countdownTimer)clearInterval(countdownTimer);function upd(){var d=t-new Date();if(d<=0){document.getElementById('cd-days').textContent='!';document.getElementById('cd-hours').textContent='';document.getElementById('cd-mins').textContent='';document.getElementById('cd-secs').textContent='';document.getElementById('countdown-label').textContent='The day has arrived!';return}document.getElementById('cd-days').textContent=Math.floor(d/864e5);document.getElementById('cd-hours').textContent=Math.floor((d%864e5)/36e5);document.getElementById('cd-mins').textContent=Math.floor((d%36e5)/6e4);document.getElementById('cd-secs').textContent=Math.floor((d%6e4)/1e3)}upd();countdownTimer=setInterval(upd,1000)}
 
-        function createHeart() {
-            const hearts = ['💕', '💖', '💗', '💝', '💞', '💓', '❤️', '🩷', '💘', '💌', '💍'];
-            const heart = document.createElement('div');
-            heart.className = 'heart';
-            heart.innerHTML = hearts[Math.floor(Math.random() * hearts.length)];
-            heart.style.left = Math.random() * 100 + '%';
-            heart.style.animationDuration = (Math.random() * 10 + 15) + 's';
-            heart.style.animationDelay = Math.random() * 5 + 's';
-            document.getElementById('hearts').appendChild(heart);
-        }
+function switchTab(tab){document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.section-panel').forEach(function(p){p.classList.remove('active')});event.target.classList.add('active');document.getElementById('panel-'+tab).classList.add('active')}
+function toggleProfileDropdown(){document.getElementById('profile-dropdown').classList.toggle('hidden')}
+document.addEventListener('click',function(e){if(!e.target.closest('#user-avatar')&&!e.target.closest('#profile-dropdown'))document.getElementById('profile-dropdown').classList.add('hidden')});
 
-        // ============================================
-        // OTP FUNCTIONS (Firebase Phone Auth)
-        // ============================================
+function renderCalendar(){var g=document.getElementById('calendar-grid'),y=calendarDate.getFullYear(),m=calendarDate.getMonth();document.getElementById('calendar-month-label').textContent=new Date(y,m).toLocaleDateString('en-US',{month:'long',year:'numeric'});var h='';['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d){h+='<div class="calendar-header">'+d+'</div>'});var fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),today=new Date(),pmd=new Date(y,m,0).getDate();for(var i=fd-1;i>=0;i--)h+='<div class="calendar-day other-month">'+(pmd-i)+'</div>';for(var d=1;d<=dim;d++){var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');var it=d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();var he=appData.calendarEvents.some(function(e){return e.date===ds});h+='<div class="calendar-day'+(it?' today':'')+(he?' has-event':'')+'" onclick="selectCalendarDay(\''+ds+'\')">'+d+'</div>'}var tc=fd+dim,rem=(7-(tc%7))%7;for(var i=1;i<=rem;i++)h+='<div class="calendar-day other-month">'+i+'</div>';g.innerHTML=h;renderCalendarEvents()}
+function changeMonth(d){calendarDate.setMonth(calendarDate.getMonth()+d);renderCalendar()}
+function selectCalendarDay(ds){var evs=appData.calendarEvents.filter(function(e){return e.date===ds});if(evs.length>0){var h='<h4 style="color:var(--deep-rose);margin-bottom:10px;">Events on '+new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</h4>';evs.forEach(function(ev){h+='<div class="list-item"><div class="list-item-content"><div class="list-item-text">'+(ev.emoji||'📅')+' '+ev.title+'</div><div class="list-item-meta">'+(ev.type||'Event')+'</div></div></div>'});openModalWith('Events',h)}else openEventModal(ds)}
+function renderCalendarEvents(){var l=document.getElementById('calendar-events-list'),up=appData.calendarEvents.filter(function(e){return new Date(e.date)>=new Date(new Date().toISOString().split('T')[0])}).sort(function(a,b){return new Date(a.date)-new Date(b.date)}).slice(0,5);if(up.length===0){l.innerHTML='';return}var h='<div style="font-weight:700;color:var(--deep-rose);margin-bottom:10px;">Upcoming Events</div>';up.forEach(function(ev,i){var dd=new Date(ev.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});h+='<div class="list-item"><div class="list-item-content"><div class="list-item-text">'+(ev.emoji||'📅')+' '+ev.title+'</div><div class="list-item-meta">'+dd+' <span class="tag tag-'+(ev.tagColor||'pink')+'">'+(ev.type||'Event')+'</span></div></div><div><button class="icon-btn delete-btn" onclick="deleteCalendarEvent('+i+')">🗑️</button></div></div>'});l.innerHTML=h}
+function openEventModal(pd){openModalWith('Add Event','<div class="input-group"><label class="input-label">Event Name</label><input type="text" id="event-title" placeholder="Date night, Anniversary..."></div><div class="input-group"><label class="input-label">Date</label><input type="date" id="event-date" value="'+(pd||'')+'"></div><div class="input-group"><label class="input-label">Type</label><select id="event-type"><option value="Date Night">Date Night</option><option value="Anniversary">Anniversary</option><option value="Trip">Trip</option><option value="Special">Special</option><option value="Reminder">Reminder</option></select></div><button class="btn" onclick="saveCalendarEvent()">Save Event</button>')}
+function saveCalendarEvent(){var t=document.getElementById('event-title').value.trim(),d=document.getElementById('event-date').value,tp=document.getElementById('event-type').value;if(!t||!d){alert('Fill all fields');return}var em={'Date Night':'💕','Anniversary':'💍','Trip':'✈️','Special':'⭐','Reminder':'🔔'},cl={'Date Night':'pink','Anniversary':'gold','Trip':'sky','Special':'lavender','Reminder':'mint'};appData.calendarEvents.push({title:t,date:d,type:tp,emoji:em[tp],tagColor:cl[tp]});saveAppData();renderCalendar();closeModalForce()}
+function deleteCalendarEvent(i){appData.calendarEvents.splice(i,1);saveAppData();renderCalendar()}
 
-        async function sendOTP() {
-            const phone = document.getElementById('phone-number').value.trim();
-            const countryCode = document.getElementById('country-code').value;
+function renderBucketList(){var l=document.getElementById('bucket-list'),e=document.getElementById('bucket-empty');if(appData.bucketList.length===0){l.innerHTML='';e.classList.remove('hidden');return}e.classList.add('hidden');var h='';appData.bucketList.forEach(function(item,i){h+='<div class="list-item'+(item.done?' completed':'')+'"><div class="list-item-check'+(item.done?' checked':'')+'" onclick="toggleBucket('+i+')">'+(item.done?'✓':'')+'</div><div class="list-item-content"><div class="list-item-text">'+item.text+'</div>'+(item.doneDate?'<div class="list-item-meta">Done '+item.doneDate+'</div>':'')+'</div><div><button class="icon-btn delete-btn" onclick="deleteBucket('+i+')">🗑️</button></div></div>'});l.innerHTML=h;updateStats()}
+function addBucketItem(){var i=document.getElementById('bucket-input'),t=i.value.trim();if(!t)return;appData.bucketList.push({text:t,done:false,doneDate:null});i.value='';saveAppData();renderBucketList()}
+function toggleBucket(i){appData.bucketList[i].done=!appData.bucketList[i].done;appData.bucketList[i].doneDate=appData.bucketList[i].done?new Date().toLocaleDateString():null;saveAppData();renderBucketList()}
+function deleteBucket(i){appData.bucketList.splice(i,1);saveAppData();renderBucketList()}
 
-            if (!phone || phone.length !== 10) {
-                showError('Please enter a valid 10-digit phone number');
-                return;
-            }
+function renderTravelList(){var l=document.getElementById('travel-list'),e=document.getElementById('travel-empty');if(appData.travelList.length===0){l.innerHTML='';e.classList.remove('hidden');return}e.classList.add('hidden');var h='';appData.travelList.forEach(function(item,i){h+='<div class="list-item'+(item.visited?' completed':'')+'"><div class="list-item-check'+(item.visited?' checked':'')+'" onclick="toggleTravel('+i+')">'+(item.visited?'✓':'')+'</div><div class="list-item-content"><div class="list-item-text">✈️ '+item.destination+'</div><div class="list-item-meta">'+(item.note||'')+(item.visitedDate?' · Visited '+item.visitedDate:'')+'</div></div><div><button class="icon-btn delete-btn" onclick="deleteTravel('+i+')">🗑️</button></div></div>'});l.innerHTML=h;updateStats()}
+function addTravelDest(){var d=document.getElementById('travel-dest-input').value.trim(),n=document.getElementById('travel-note-input').value.trim();if(!d)return;appData.travelList.push({destination:d,note:n,visited:false,visitedDate:null});document.getElementById('travel-dest-input').value='';document.getElementById('travel-note-input').value='';saveAppData();renderTravelList()}
+function toggleTravel(i){appData.travelList[i].visited=!appData.travelList[i].visited;appData.travelList[i].visitedDate=appData.travelList[i].visited?new Date().toLocaleDateString():null;saveAppData();renderTravelList()}
+function deleteTravel(i){appData.travelList.splice(i,1);saveAppData();renderTravelList()}
 
-            const fullPhone = countryCode + phone;
-            currentPhone = fullPhone;
+function renderBabyNames(){var bl=document.getElementById('boy-names-list'),gl=document.getElementById('girl-names-list'),nl=document.getElementById('neutral-names-list'),e=document.getElementById('baby-names-empty');if(appData.babyNames.length===0){bl.innerHTML='';gl.innerHTML='';nl.innerHTML='';e.classList.remove('hidden');return}e.classList.add('hidden');function rn(names){return names.map(function(n){var i=appData.babyNames.indexOf(n);return '<div class="name-item'+(n.hearts>=2?' both-loved':'')+'">'+n.name+' <button class="icon-btn" onclick="heartBabyName('+i+')" style="width:28px;height:28px;font-size:0.8rem;background:'+(n.hearted?'var(--deep-rose)':'rgba(255,105,180,0.15)')+';color:'+(n.hearted?'white':'inherit')+'">'+(n.hearted?'❤️':'🤍')+' <span class="heart-count">'+(n.hearts||0)+'</span></button> <button class="icon-btn delete-btn" onclick="deleteBabyName('+i+')" style="width:28px;height:28px;font-size:0.7rem;">✕</button></div>'}).join('')}bl.innerHTML=rn(appData.babyNames.filter(function(n){return n.gender==='boy'}))||'<span style="font-size:0.85rem;color:var(--purple-heart)">No boy names yet</span>';gl.innerHTML=rn(appData.babyNames.filter(function(n){return n.gender==='girl'}))||'<span style="font-size:0.85rem;color:var(--purple-heart)">No girl names yet</span>';nl.innerHTML=rn(appData.babyNames.filter(function(n){return n.gender==='neutral'}))||'<span style="font-size:0.85rem;color:var(--purple-heart)">No neutral names yet</span>'}
+function addBabyName(){var n=document.getElementById('baby-name-input').value.trim(),g=document.getElementById('baby-name-gender').value;if(!n)return;appData.babyNames.push({name:n,gender:g,hearts:0,hearted:false});document.getElementById('baby-name-input').value='';saveAppData();renderBabyNames()}
+function heartBabyName(i){var n=appData.babyNames[i];if(n.hearted){n.hearts=Math.max(0,n.hearts-1);n.hearted=false}else{n.hearts=(n.hearts||0)+1;n.hearted=true}saveAppData();renderBabyNames()}
+function deleteBabyName(i){appData.babyNames.splice(i,1);saveAppData();renderBabyNames()}
 
-            const btn = document.getElementById('send-otp-btn');
-            btn.disabled = true;
-            document.getElementById('phone-btn-text').innerHTML = '<span class="loading"></span>';
+function renderLoveNotes(){var l=document.getElementById('notes-list'),e=document.getElementById('notes-empty');if(appData.loveNotes.length===0){l.innerHTML='';e.classList.remove('hidden');return}e.classList.add('hidden');var today=new Date().toISOString().split('T')[0];var h='';appData.loveNotes.sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt)}).forEach(function(note,i){var locked=note.openDate&&note.openDate>today;h+='<div class="note-card">'+(locked?'<div class="note-lock-overlay">🔒 Opens '+new Date(note.openDate+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div>':'')+'<div '+(locked?'class="note-locked"':'')+'><div class="note-date">'+new Date(note.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div><div class="note-text">'+note.text+'</div>'+(note.openDate&&!locked?'<div style="font-size:0.8rem;color:var(--coral);margin-top:10px;">🔓 Time capsule opened!</div>':'')+'</div>'+(!locked?'<button class="icon-btn delete-btn" onclick="deleteLoveNote('+i+')" style="position:absolute;top:15px;right:40px;">🗑️</button>':'')+'</div>'});l.innerHTML=h;updateStats()}
+function openNoteModal(){openModalWith('Write a Love Note','<div class="input-group"><label class="input-label">Your Love Note</label><textarea id="note-text" placeholder="Write something sweet..." rows="5"></textarea></div><div class="input-group"><label class="input-label">Time Capsule - Open Date (optional)</label><input type="date" id="note-open-date"><div style="font-size:0.8rem;color:var(--purple-heart);margin-top:5px;">Leave empty for now</div></div><button class="btn btn-gold" onclick="saveLoveNote()">Send Love Note</button>')}
+function saveLoveNote(){var t=document.getElementById('note-text').value.trim(),od=document.getElementById('note-open-date').value||null;if(!t){alert('Write something!');return}appData.loveNotes.push({text:t,openDate:od,createdAt:new Date().toISOString()});saveAppData();renderLoveNotes();closeModalForce()}
+function deleteLoveNote(i){appData.loveNotes.splice(i,1);saveAppData();renderLoveNotes()}
 
-            try {
-                // Ensure reCAPTCHA is ready
-                if (!recaptchaVerifier) {
-                    setupRecaptcha();
-                    // Give it a moment to render
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+function renderMemories(){var tl=document.getElementById('memories-timeline'),e=document.getElementById('memories-empty');if(appData.memories.length===0){tl.innerHTML='';e.classList.remove('hidden');return}e.classList.add('hidden');var h='';appData.memories.sort(function(a,b){return new Date(a.date)-new Date(b.date)}).forEach(function(m,i){h+='<div class="timeline-item"><div class="timeline-date">'+new Date(m.date+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div><div class="timeline-title">'+(m.emoji||'💕')+' '+m.title+'</div>'+(m.description?'<div class="timeline-desc">'+m.description+'</div>':'')+'<button class="icon-btn delete-btn" onclick="deleteMemory('+i+')" style="margin-top:5px;">🗑️</button></div>'});tl.innerHTML=h;updateStats()}
+function openMemoryModal(){var emojis=['💕','💋','🥰','🌅','✈️','🏠','🎉','🎂','💍','🌹','📸','⭐'];var eh=emojis.map(function(e){return '<div class="mood-option" onclick="selectMemoryEmoji(this,\''+e+'\')">'+e+'</div>'}).join('');openModalWith('Add Memory','<div class="input-group"><label class="input-label">Memory Title</label><input type="text" id="memory-title" placeholder="First kiss, First trip..."></div><div class="input-group"><label class="input-label">When?</label><input type="date" id="memory-date"></div><div class="input-group"><label class="input-label">Tell the story</label><textarea id="memory-desc" placeholder="What made this special..." rows="4"></textarea></div><div class="input-group"><label class="input-label">Pick an emoji</label><div class="mood-grid">'+eh+'</div><input type="hidden" id="memory-emoji" value="💕"></div><button class="btn" onclick="saveMemory()">Save Memory</button>')}
+function selectMemoryEmoji(el,e){el.parentElement.querySelectorAll('.mood-option').forEach(function(o){o.classList.remove('selected')});el.classList.add('selected');document.getElementById('memory-emoji').value=e}
+function saveMemory(){var t=document.getElementById('memory-title').value.trim(),d=document.getElementById('memory-date').value,desc=document.getElementById('memory-desc').value.trim(),e=document.getElementById('memory-emoji').value;if(!t||!d){alert('Add title and date');return}appData.memories.push({title:t,date:d,description:desc,emoji:e});saveAppData();renderMemories();closeModalForce()}
+function deleteMemory(i){appData.memories.splice(i,1);saveAppData();renderMemories()}
 
-                // Send OTP via Firebase Phone Auth
-                confirmationResult = await auth.signInWithPhoneNumber(fullPhone, recaptchaVerifier);
+function toggleDateCategory(el,cat){document.querySelectorAll('.category-chip').forEach(function(c){c.classList.remove('active')});el.classList.add('active');selectedDateCategory=cat}
+function generateDateIdea(){var d=document.getElementById('date-idea-display');var pool=selectedDateCategory==='all'?[].concat(dateIdeasDB.romantic,dateIdeasDB.adventure,dateIdeasDB.cozy,dateIdeasDB.foodie,dateIdeasDB.creative):dateIdeasDB[selectedDateCategory]||[];var custom=selectedDateCategory==='all'?appData.customDateIdeas.map(function(d){return d.text}):appData.customDateIdeas.filter(function(d){return d.category===selectedDateCategory}).map(function(d){return d.text});pool=pool.concat(custom);if(pool.length===0){d.textContent='No ideas yet!';return}d.classList.add('spin-animation');setTimeout(function(){d.textContent=pool[Math.floor(Math.random()*pool.length)];d.classList.remove('spin-animation')},300)}
+function openCustomDateModal(){openModalWith('Add Date Idea','<div class="input-group"><label class="input-label">Your Idea</label><input type="text" id="custom-date-text" placeholder="Something fun..."></div><div class="input-group"><label class="input-label">Category</label><select id="custom-date-category"><option value="romantic">Romantic</option><option value="adventure">Adventure</option><option value="cozy">Cozy</option><option value="foodie">Foodie</option><option value="creative">Creative</option></select></div><button class="btn" onclick="saveCustomDateIdea()">Add</button>')}
+function saveCustomDateIdea(){var t=document.getElementById('custom-date-text').value.trim(),c=document.getElementById('custom-date-category').value;if(!t)return;appData.customDateIdeas.push({text:t,category:c});saveAppData();closeModalForce()}
 
-                // Show OTP step
-                document.getElementById('phone-step').classList.add('hidden');
-                document.getElementById('otp-step').classList.remove('hidden');
-                document.getElementById('phone-display').textContent = fullPhone;
-                
-                showSuccess('Verification code sent! ✨');
-                
-                // Focus first OTP input
-                document.getElementById('otp-1').focus();
+function renderFavorites(){var g=document.getElementById('favorites-grid');var h='';favoritesTemplate.forEach(function(f){var v=appData.favorites[f.key]||'';h+='<div class="fav-card"><div class="fav-icon">'+f.icon+'</div><div class="fav-label">'+f.label+'</div><input class="fav-value-input" type="text" value="'+v.replace(/"/g,'&quot;')+'" placeholder="Add yours..." onchange="saveFavorite(\''+f.key+'\',this.value)" onfocus="this.select()"></div>'});g.innerHTML=h}
+function saveFavorite(k,v){appData.favorites[k]=v.trim();saveAppData()}
 
-                // Start cooldown timer
-                startCooldown(60);
+function renderIntimateJournal(){var l=document.getElementById('intimate-list'),w=document.getElementById('intimate-wishlist'),e=document.getElementById('intimate-empty');if(appData.intimateEntries.length===0&&appData.intimateWishlist.length===0){l.innerHTML='';w.innerHTML='';e.classList.remove('hidden');return}e.classList.add('hidden');var h='';if(appData.intimateEntries.length>0){h+='<div style="font-weight:700;color:var(--coral);margin-bottom:10px;">Our Journal</div>';appData.intimateEntries.sort(function(a,b){return new Date(b.date)-new Date(a.date)}).forEach(function(en,i){var stars='';for(var s=0;s<5;s++)stars+=s<(en.rating||0)?'⭐':'☆';h+='<div class="intimate-entry"><div class="intimate-entry-date">'+new Date(en.date+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div><div style="font-size:1.5rem;margin:8px 0;">'+(en.mood||'💕')+'</div><div>'+stars+'</div>'+(en.notes?'<div style="font-family:Dancing Script,cursive;font-size:1rem;color:var(--text-cute);line-height:1.6;margin-top:8px;">'+en.notes+'</div>':'')+(en.position?'<div style="margin-top:8px;"><span class="tag tag-coral">'+en.position+'</span></div>':'')+'<button class="icon-btn delete-btn" onclick="deleteIntimateEntry('+i+')" style="margin-top:8px;">🗑️</button></div>'})}l.innerHTML=h;var wH='<div class="card" style="background:linear-gradient(135deg,rgba(255,200,200,0.1),rgba(255,180,220,0.1));"><div style="font-weight:700;color:var(--coral);margin-bottom:10px;">🔥 Want to Try Together</div>';if(appData.intimateWishlist.length>0){appData.intimateWishlist.forEach(function(item,i){wH+='<div class="list-item"><div class="list-item-check'+(item.tried?' checked':'')+'" onclick="toggleIntimateWishlist('+i+')">'+(item.tried?'✓':'')+'</div><div class="list-item-content"><div class="list-item-text">'+item.text+'</div>'+(item.tried?'<div class="list-item-meta">Tried it!</div>':'')+'</div><button class="icon-btn delete-btn" onclick="deleteIntimateWishlist('+i+')">🗑️</button></div>'})}wH+='<div class="add-row" style="margin-top:15px;"><input type="text" id="intimate-wish-input" placeholder="Something to explore..."><button class="btn btn-small btn-coral" onclick="addIntimateWishlist()">+ Add</button></div></div>';w.innerHTML=wH;updateStats()}
 
-            } catch (error) {
-                console.error('Send OTP error:', error);
-                let errorMessage = 'Error sending verification code. ';
-                
-                if (error.code === 'auth/too-many-requests') {
-                    errorMessage = 'Too many attempts. Please wait a while and try again.';
-                } else if (error.code === 'auth/invalid-phone-number') {
-                    errorMessage = 'Invalid phone number format. Please check and try again.';
-                } else if (error.code === 'auth/captcha-check-failed') {
-                    errorMessage = 'Security verification failed. Please refresh the page and try again.';
-                    resetRecaptcha();
-                } else if (error.code === 'auth/quota-exceeded') {
-                    errorMessage = 'SMS quota exceeded. Please try again later.';
-                } else {
-                    errorMessage += error.message || 'Please try again.';
-                }
-                
-                showError(errorMessage);
-                btn.disabled = false;
-                document.getElementById('phone-btn-text').textContent = 'Send Verification Code 📱';
-                
-                // Reset reCAPTCHA on error so user can retry
-                resetRecaptcha();
-            }
-        }
+function openIntimateModal(){var mh=intimateMoods.map(function(m){return '<div class="mood-option" onclick="selectIntimateMood(this,\''+m+'\')">'+m+'</div>'}).join('');openModalWith('New Intimate Entry','<div class="input-group"><label class="input-label">When?</label><input type="date" id="intimate-date" value="'+new Date().toISOString().split('T')[0]+'"></div><div class="input-group"><label class="input-label">How did you feel?</label><div class="mood-grid">'+mh+'</div><input type="hidden" id="intimate-mood" value="💕"></div><div class="input-group"><label class="input-label">Rating</label><div id="intimate-rating" style="font-size:1.8rem;cursor:pointer;"><span class="star" onclick="setIntimateRating(1)">☆</span><span class="star" onclick="setIntimateRating(2)">☆</span><span class="star" onclick="setIntimateRating(3)">☆</span><span class="star" onclick="setIntimateRating(4)">☆</span><span class="star" onclick="setIntimateRating(5)">☆</span></div><input type="hidden" id="intimate-rating-val" value="0"></div><div class="input-group"><label class="input-label">What did you try? (optional)</label><input type="text" id="intimate-position" placeholder="Describe..."></div><div class="input-group"><label class="input-label">Feelings &amp; Thoughts</label><textarea id="intimate-notes" placeholder="How did it feel..." rows="4"></textarea></div><button class="btn btn-coral" onclick="saveIntimateEntry()">Save Entry</button>')}
+function selectIntimateMood(el,m){el.parentElement.querySelectorAll('.mood-option').forEach(function(o){o.classList.remove('selected')});el.classList.add('selected');document.getElementById('intimate-mood').value=m}
+function setIntimateRating(n){document.getElementById('intimate-rating-val').value=n;var stars=document.getElementById('intimate-rating').querySelectorAll('.star');for(var i=0;i<stars.length;i++)stars[i].textContent=i<n?'⭐':'☆'}
+function saveIntimateEntry(){var d=document.getElementById('intimate-date').value,m=document.getElementById('intimate-mood').value,r=parseInt(document.getElementById('intimate-rating-val').value)||0,p=document.getElementById('intimate-position').value.trim(),n=document.getElementById('intimate-notes').value.trim();if(!d){alert('Add a date');return}appData.intimateEntries.push({date:d,mood:m,rating:r,position:p,notes:n});saveAppData();renderIntimateJournal();closeModalForce()}
+function deleteIntimateEntry(i){appData.intimateEntries.splice(i,1);saveAppData();renderIntimateJournal()}
+function addIntimateWishlist(){var i=document.getElementById('intimate-wish-input'),t=i.value.trim();if(!t)return;appData.intimateWishlist.push({text:t,tried:false});i.value='';saveAppData();renderIntimateJournal()}
+function toggleIntimateWishlist(i){appData.intimateWishlist[i].tried=!appData.intimateWishlist[i].tried;saveAppData();renderIntimateJournal()}
+function deleteIntimateWishlist(i){appData.intimateWishlist.splice(i,1);saveAppData();renderIntimateJournal()}
 
-        async function verifyOTP() {
-            const otp = Array.from({length: 6}, (_, i) => 
-                document.getElementById(`otp-${i+1}`).value
-            ).join('');
+function updateStats(){document.getElementById('stat-trips').textContent=appData.travelList.length;var bd=appData.bucketList.filter(function(b){return b.done}).length,bt=appData.bucketList.length;document.getElementById('stat-bucket').textContent=bt>0?Math.round((bd/bt)*100)+'%':'0%';document.getElementById('stat-notes').textContent=appData.loveNotes.length;document.getElementById('stat-memories').textContent=appData.memories.length;document.getElementById('stat-intimate').textContent=appData.intimateEntries.length}
 
-            if (otp.length !== 6) {
-                showError('Please enter the complete 6-digit code');
-                return;
-            }
+function openModalWith(t,b){document.getElementById('modal-title').textContent=t;document.getElementById('modal-body').innerHTML=b;document.getElementById('modal-overlay').classList.remove('hidden')}
+function closeModal(e){if(e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.add('hidden')}
+function closeModalForce(){document.getElementById('modal-overlay').classList.add('hidden')}
 
-            if (!confirmationResult) {
-                showError('Session expired. Please request a new code.');
-                backToPhone();
-                return;
-            }
+function editCountdownDate(){toggleProfileDropdown();openModalWith('Edit Special Date','<div class="input-group"><label class="input-label">New Date</label><input type="date" id="edit-target-date" value="'+(relationshipData&&relationshipData.targetDate||'')+'"></div><button class="btn" onclick="saveNewTargetDate()">Update</button>')}
+function saveNewTargetDate(){var d=document.getElementById('edit-target-date').value;if(!d)return;db.collection('users').doc(currentUser.uid).update({targetDate:d}).then(function(){relationshipData.targetDate=d;startCountdown(d);closeModalForce()}).catch(function(e){console.error('Update err:',e)})}
+function logout(){auth.signOut().then(function(){currentUser=null;relationshipData=null;location.reload()}).catch(function(e){console.error('Logout err:',e)})}
 
-            const btn = document.getElementById('otp-btn-text');
-            btn.innerHTML = '<span class="loading"></span>';
-            document.getElementById('verify-otp-btn').disabled = true;
+function showError(m){var c=document.getElementById('message-container');c.innerHTML='<div class="error-message">'+m+'</div>';setTimeout(function(){c.innerHTML=''},5000)}
+function showSuccess(m){var c=document.getElementById('message-container');c.innerHTML='<div class="success-message">'+m+'</div>';setTimeout(function(){c.innerHTML=''},5000)}
 
-            try {
-                // Verify OTP with Firebase
-                const result = await confirmationResult.confirm(otp);
-                const user = result.user;
-
-                console.log('User verified:', user.phoneNumber, 'UID:', user.uid);
-                
-                // handleAuthenticatedUser will be called via onAuthStateChanged
-                // But we can also handle it directly here for smoother UX
-                await handleAuthenticatedUser(user);
-
-            } catch (error) {
-                console.error('Verify OTP error:', error);
-                let errorMessage = 'Invalid verification code. Please try again.';
-                
-                if (error.code === 'auth/code-expired') {
-                    errorMessage = 'Code expired. Please request a new one.';
-                } else if (error.code === 'auth/invalid-verification-code') {
-                    errorMessage = 'Invalid code. Please check and try again.';
-                } else if (error.code === 'auth/session-expired') {
-                    errorMessage = 'Session expired. Please request a new code.';
-                }
-                
-                showError(errorMessage);
-                btn.textContent = 'Verify Code ✅';
-                document.getElementById('verify-otp-btn').disabled = false;
-                
-                // Clear OTP inputs
-                clearOtpInputs();
-            }
-        }
-
-        async function resendOTP() {
-            if (cooldownInterval) return; // Still on cooldown
-
-            try {
-                // Reset reCAPTCHA for new request
-                resetRecaptcha();
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Re-send OTP via Firebase
-                confirmationResult = await auth.signInWithPhoneNumber(currentPhone, recaptchaVerifier);
-
-                showSuccess('New code sent! ✨');
-                startCooldown(60);
-                clearOtpInputs();
-
-            } catch (error) {
-                console.error('Resend OTP error:', error);
-                if (error.code === 'auth/too-many-requests') {
-                    showError('Too many attempts. Please wait a while before trying again.');
-                } else {
-                    showError('Error resending code: ' + (error.message || 'Please try again.'));
-                }
-                // Reset reCAPTCHA on error
-                resetRecaptcha();
-            }
-        }
-
-        // ============================================
-        // OTP INPUT HELPERS
-        // ============================================
-
-        function moveToNext(current, nextId) {
-            if (current.value.length === 1) {
-                const next = document.getElementById(nextId);
-                if (next) next.focus();
-            }
-        }
-
-        function handleOtpKeydown(event, prevId) {
-            if (event.key === 'Backspace' && event.target.value === '' && prevId) {
-                const prev = document.getElementById(prevId);
-                if (prev) {
-                    prev.value = '';
-                    prev.focus();
-                }
-            }
-        }
-
-        function autoVerify() {
-            const otp = Array.from({length: 6}, (_, i) => 
-                document.getElementById(`otp-${i+1}`).value
-            ).join('');
-            if (otp.length === 6) {
-                verifyOTP();
-            }
-        }
-
-        function clearOtpInputs() {
-            for (let i = 1; i <= 6; i++) {
-                document.getElementById(`otp-${i}`).value = '';
-            }
-            document.getElementById('otp-1').focus();
-        }
-
-        function startCooldown(seconds) {
-            const resendLink = document.getElementById('resend-link');
-            const cooldownDisplay = document.getElementById('cooldown-display');
-            const cooldownSeconds = document.getElementById('cooldown-seconds');
-            
-            resendLink.style.pointerEvents = 'none';
-            resendLink.style.opacity = '0.4';
-            cooldownDisplay.classList.remove('hidden');
-            
-            let remaining = seconds;
-            cooldownSeconds.textContent = remaining;
-            
-            cooldownInterval = setInterval(() => {
-                remaining--;
-                cooldownSeconds.textContent = remaining;
-                
-                if (remaining <= 0) {
-                    clearInterval(cooldownInterval);
-                    cooldownInterval = null;
-                    resendLink.style.pointerEvents = 'auto';
-                    resendLink.style.opacity = '1';
-                    cooldownDisplay.classList.add('hidden');
-                }
-            }, 1000);
-        }
-
-        function backToPhone() {
-            document.getElementById('otp-step').classList.add('hidden');
-            document.getElementById('phone-step').classList.remove('hidden');
-            
-            // Clear OTP inputs
-            clearOtpInputs();
-            
-            // Reset send button
-            document.getElementById('send-otp-btn').disabled = false;
-            document.getElementById('phone-btn-text').textContent = 'Send Verification Code 📱';
-            
-            // Clear cooldown
-            if (cooldownInterval) {
-                clearInterval(cooldownInterval);
-                cooldownInterval = null;
-            }
-
-            // Reset confirmationResult
-            confirmationResult = null;
-
-            // Reset reCAPTCHA for fresh attempt
-            resetRecaptcha();
-        }
-
-        // ============================================
-        // SETUP & APP
-        // ============================================
-
-        function showSetup() {
-            document.getElementById('phone-step').classList.add('hidden');
-            document.getElementById('otp-step').classList.add('hidden');
-            document.getElementById('setup-step').classList.remove('hidden');
-            
-            // Set default target date (17 months + 3 days from today)
-            const targetDate = new Date();
-            targetDate.setMonth(targetDate.getMonth() + 17);
-            targetDate.setDate(targetDate.getDate() + 3);
-            document.getElementById('target-date').value = targetDate.toISOString().split('T')[0];
-        }
-
-        async function createRelationship() {
-            const userName = document.getElementById('user-name').value.trim();
-            const partnerPhone = '+91' + document.getElementById('partner-phone').value.trim();
-            const relationshipStart = document.getElementById('relationship-start').value;
-            const targetDate = document.getElementById('target-date').value;
-
-            if (!userName || !partnerPhone || partnerPhone.length < 13 || !relationshipStart || !targetDate) {
-                showError('Please fill in all fields correctly');
-                return;
-            }
-
-            if (partnerPhone === currentPhone) {
-                showError('You cannot add yourself as a partner!');
-                return;
-            }
-
-            const btn = document.getElementById('setup-btn-text');
-            btn.innerHTML = '<span class="loading"></span>';
-
-            try {
-                const user = auth.currentUser;
-                if (!user) {
-                    showError('Authentication lost. Please log in again.');
-                    location.reload();
-                    return;
-                }
-
-                // Update Firebase Auth display name
-                await user.updateProfile({
-                    displayName: userName
-                });
-
-                // Save user data to Firestore
-                await db.collection('users').doc(user.uid).set({
-                    name: userName,
-                    phone: currentPhone,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                // Save relationship data to Firestore
-                await db.collection('relationships').add({
-                    userId: user.uid,
-                    userPhone: currentPhone,
-                    userName: userName,
-                    partnerPhone: partnerPhone,
-                    relationshipStart: relationshipStart,
-                    targetDate: targetDate,
-                    status: 'active',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                console.log('Relationship created successfully!');
-                showSuccess('Relationship created! ✨');
-                
-                setTimeout(() => {
-                    showApp({
-                        displayName: userName,
-                        phoneNumber: currentPhone
-                    });
-                }, 2000);
-
-            } catch (error) {
-                console.error('Create relationship error:', error);
-                showError('Error creating relationship: ' + (error.message || 'Please try again.'));
-                btn.textContent = 'Start Our Forever Journey 🚀';
-            }
-        }
-
-        function showApp(user) {
-            document.getElementById('auth').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            
-            document.getElementById('welcome-message').textContent = 
-                `Welcome ${user.displayName || 'back'}! Your love journey awaits. 💕`;
-        }
-
-        async function logout() {
-            try {
-                await auth.signOut();
-                // Reset state
-                currentPhone = null;
-                confirmationResult = null;
-                location.reload();
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
-        }
-
-        function showCheaterWarning() {
-            const warning = `
-                <div class="cheater-warning">
-                    🚨 STOP! YOU'RE TRYING TO CHEAT! 🚨<br><br>
-                    You already have a relationship on this platform.<br><br>
-                    Delete your current relationship first if you've moved on.<br><br>
-                    We believe in ONE LOVE, ONE PARTNER. 💍
-                </div>
-            `;
-            document.getElementById('message-container').innerHTML = warning;
-        }
-
-        // ============================================
-        // MESSAGES
-        // ============================================
-
-        function showError(message) {
-            const container = document.getElementById('message-container');
-            container.innerHTML = `<div class="error-message">${message}</div>`;
-            setTimeout(() => container.innerHTML = '', 5000);
-        }
-
-        function showSuccess(message) {
-            const container = document.getElementById('message-container');
-            container.innerHTML = `<div class="success-message">${message}</div>`;
-            setTimeout(() => container.innerHTML = '', 5000);
-        }
-
-        // ============================================
-        // INIT
-        // ============================================
-
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+document.addEventListener('keydown',function(e){if(e.key==='Enter'){var id=e.target.id;if(id==='bucket-input')addBucketItem();else if(id==='travel-dest-input'||id==='travel-note-input')addTravelDest();else if(id==='baby-name-input')addBabyName();else if(id==='phone-number')sendOTP()}if(e.key==='Escape')closeModalForce()});
+window.addEventListener('DOMContentLoaded',init);
+</script>
 </body>
 </html>
