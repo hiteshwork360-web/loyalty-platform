@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function phoneNumber() {
+      return isSignedIn() && userDoc().data.phone != null ? userDoc().data.phone : null;
+    }
+
+    function isRelationshipMember(data) {
+      return isSignedIn() &&
+        phoneNumber() != null &&
+        data.members is list &&
+        phoneNumber() in data.members;
+    }
+
+    function inviteVisible(data) {
+      return isSignedIn() &&
+        phoneNumber() != null &&
+        (
+          data.partnerPhone == phoneNumber() ||
+          data.inviterPhone == phoneNumber()
+        );
+    }
+
+    match /users/{userId} {
+      allow read, create, update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /relationships/{relationshipId} {
+      allow read: if isRelationshipMember(resource.data);
+      allow create: if isSignedIn() &&
+        request.resource.data.members is list &&
+        phoneNumber() != null &&
+        phoneNumber() in request.resource.data.members;
+      allow update: if isRelationshipMember(resource.data) || isRelationshipMember(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /appData/{relationshipId} {
+      allow read, write: if isSignedIn() &&
+        exists(/databases/$(database)/documents/relationships/$(relationshipId)) &&
+        isRelationshipMember(get(/databases/$(database)/documents/relationships/$(relationshipId)).data);
+    }
+
+    match /invites/{inviteId} {
+      allow read: if inviteVisible(resource.data);
+      allow create: if isSignedIn() &&
+        phoneNumber() != null &&
+        request.resource.data.inviterPhone == phoneNumber();
+      allow update: if inviteVisible(resource.data);
+      allow delete: if false;
+    }
+  }
+}
