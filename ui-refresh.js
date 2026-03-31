@@ -637,13 +637,27 @@ function mobileHints(){
   });
 }
 function boot(){
-  addStyles();
-  authCopy();
-  sectionSubtitle();
-  profilePolish();
-  mobileHints();
+  try{
+    addStyles();
+    authCopy();
+    sectionSubtitle();
+    profilePolish();
+    mobileHints();
+  }catch(err){
+    console.error('ui-refresh boot failed',err);
+  }
 }
-window.addEventListener('load',boot);
-new MutationObserver(boot).observe(document.documentElement,{childList:true,subtree:true});
+function scheduleBoots(){
+  [0,250,900,1800].forEach(function(delay){
+    window.setTimeout(boot,delay);
+  });
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',scheduleBoots,{once:true});
+}else{
+  scheduleBoots();
+}
+window.addEventListener('resize',mobileHints);
 })();
+
 
